@@ -3,6 +3,7 @@ import { Breadcrumb, Modal, Field, Chip, EstadoChip, EmptyState, DisabledBtn } f
 import {
   FRENTES, REGLAS_MOTOR, MODALIDADES, SITIOS_S09 as SITIOS,
   TURNOS_WITH_HOURS as TURNOS, ESTADOS_CELDA_V2 as ESTADOS_CELDA,
+  ICONOS_FRENTE, EMPRESA_SCOPE,
   type Frente, type ReglaCelda, type Rol, puedeEditar, severidadClass,
 } from '../data';
 import { descargarPlantillaImportacionCatalogos } from '../utils/plantillaImportacionExcel';
@@ -13,15 +14,128 @@ interface Props {
   params: any;
   onToast: (msg: string, desc: string, type: 'success' | 'error' | 'warning') => void;
   role: Rol;
+  frenteCtx?: string | null;
+  enterFrente?: (frenteId: string) => void;
+  enterEmpresa?: () => void;
+  clearFrenteCtx?: () => void;
 }
 
 function GuiaLink({ navigate }: { navigate: Props['navigate'] }) {
   return (
     <div className="helper-text" style={{ marginBottom: 14, display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-      <span>¿Qué va primero? Revisa la <strong>guía de arranque</strong> de Parametrización.</span>
+      <span>¿Qué va primero? Revisa la <strong>guía de arranque</strong> (alcance Empresa).</span>
       <button className="btn-secondary" type="button" style={{ height: 28, fontSize: 11 }} onClick={() => navigate('S0P')}>
         Ver guía →
       </button>
+    </div>
+  );
+}
+
+function FrenteCardButton({
+  icon,
+  code,
+  title,
+  desc,
+  meta,
+  onClick,
+}: {
+  icon: string;
+  code: string;
+  title: string;
+  desc: string;
+  meta: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        textAlign: 'left',
+        padding: '18px 18px 16px',
+        border: '1px solid var(--clr-border)',
+        borderRadius: 10,
+        background: '#fff',
+        cursor: 'pointer',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.borderColor = 'var(--clr-primary)';
+        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = 'var(--clr-border)';
+        e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+        <span style={{ fontSize: 28 }}>{icon}</span>
+        <code style={{ fontSize: 11, background: '#F3F4F6', padding: '2px 6px', borderRadius: 4 }}>{code}</code>
+      </div>
+      <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{title}</div>
+      <div style={{ fontSize: 12, color: 'var(--clr-text-muted)', marginBottom: 14, lineHeight: 1.4, minHeight: 34 }}>{desc}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-primary)' }}>{meta}</span>
+        <span style={{ fontSize: 12, color: 'var(--clr-primary)' }}>Entrar →</span>
+      </div>
+    </button>
+  );
+}
+
+// ─── S0D Dashboard Parametrización (elige frente / empresa) ───────────────────
+function S0DDashboard({ enterFrente, enterEmpresa }: Props) {
+  const frentes = FRENTES.filter(f => f.activo);
+  return (
+    <div style={{ padding: '24px 28px', maxWidth: 1100 }}>
+      <Breadcrumb items={[{ label: 'Parametrización' }, { label: 'Elegir alcance' }]} />
+      <div className="page-header">
+        <div>
+          <div className="page-title">Parametrización</div>
+          <div className="page-subtitle">
+            Primero elige el frente operativo. Luego verás solo las pantallas que aplican a ese frente.
+          </div>
+        </div>
+      </div>
+
+      <div className="section-header" style={{ marginBottom: 12 }}>Frentes operativos</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14, marginBottom: 28 }}>
+        {frentes.map(f => {
+          const caps = [
+            f.usaModalidad && 'Modalidad',
+            f.usaCampanas && 'Campañas',
+            f.usaTerritorioZona && 'Territorio',
+          ].filter(Boolean);
+          return (
+            <FrenteCardButton
+              key={f.id}
+              icon={ICONOS_FRENTE[f.id] ?? '🏬'}
+              code={f.id}
+              title={f.nombre}
+              desc={f.descripcion || `Configuración y catálogos de ${f.nombre}`}
+              meta={caps.length ? caps.join(' · ') : 'Sin atributos extra'}
+              onClick={() => enterFrente?.(f.id)}
+            />
+          );
+        })}
+      </div>
+
+      <div className="section-header" style={{ marginBottom: 12 }}>Alcance empresa</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
+        <FrenteCardButton
+          icon="🏢"
+          code="EMP"
+          title="Catálogos de empresa"
+          desc="Frentes, estados de celda, festivos, cortes, tipos de hora e importación Excel. No dependen de un frente."
+          meta="Guía · Frentes · Estados · Calendario"
+          onClick={() => enterEmpresa?.()}
+        />
+      </div>
+
+      <div className="helper-text" style={{ marginTop: 18 }}>
+        Tip: las plantillas de turno, sitios y campañas viven <strong>dentro del frente</strong>.
+        Festivos y estados son de <strong>empresa</strong>.
+      </div>
+      <div className="screen-id">S0D</div>
     </div>
   );
 }
@@ -564,10 +678,11 @@ function S02ConfigFrente({ navigate, params, onToast, role }: Props) {
 }
 
 // ─── S03 Plantillas de turno ──────────────────────────────────────────────────
-function S03Plantillas({ navigate, params, onToast, role }: Props) {
+function S03Plantillas({ navigate, params, onToast, role, frenteCtx, clearFrenteCtx }: Props) {
   const canEdit = puedeEditar(role);
   const frentesActivos = FRENTES.filter(f => f.activo);
-  const [frenteId, setFrenteId] = useState<string | null>(params?.frenteId ?? null);
+  const lockedByCtx = !!(frenteCtx && frenteCtx !== EMPRESA_SCOPE);
+  const [frenteLocal, setFrenteLocal] = useState<string | null>(params?.frenteId ?? null);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({
     codigo: '',
@@ -579,7 +694,8 @@ function S03Plantillas({ navigate, params, onToast, role }: Props) {
     activo: true,
   });
 
-  const frente = frentesActivos.find(f => f.id === frenteId) ?? null;
+  const effectiveId = lockedByCtx ? frenteCtx! : (frenteLocal ?? params?.frenteId ?? null);
+  const frente = frentesActivos.find(f => f.id === effectiveId) ?? null;
   const turnosFrente = frente
     ? TURNOS.filter(t => (t.frentes ?? [t.frenteId]).includes(frente.id) || t.frenteId === frente.id)
     : [];
@@ -605,14 +721,7 @@ function S03Plantillas({ navigate, params, onToast, role }: Props) {
     navigate('S04', { turnoId: form.codigo.toUpperCase(), nuevo: true, frenteId: frente.id });
   }
 
-  const iconoFrente: Record<string, string> = {
-    CC: '🎧',
-    SITIO: '🛠️',
-    MESA: '🖥️',
-    LAB: '🔬',
-  };
-
-  // ── Vista: elegir frente ──
+  // ── Vista: elegir frente (solo si no hay contexto del Shell) ──
   if (!frente) {
     return (
       <div style={{ padding: '24px 28px', maxWidth: 1100 }}>
@@ -621,13 +730,12 @@ function S03Plantillas({ navigate, params, onToast, role }: Props) {
         <div className="page-header">
           <div>
             <div className="page-title">Plantillas de turno</div>
-            <div className="page-subtitle">Paso 2 — Elige el frente y define sus turnos. HU11–13</div>
+            <div className="page-subtitle">Elige el frente y define sus turnos. HU11–13</div>
           </div>
         </div>
 
         <div className="helper-text" style={{ marginBottom: 16 }}>
-          Cada frente tiene su propio catálogo de turnos (horarios, breaks, color).
-          Selecciona la tarjeta del frente para ver o crear sus plantillas.
+          Preferible entrar desde el dashboard de Parametrización eligiendo el frente; aquí también puedes elegir la tarjeta.
         </div>
 
         {frentesActivos.length === 0 ? (
@@ -641,82 +749,49 @@ function S03Plantillas({ navigate, params, onToast, role }: Props) {
             {frentesActivos.map(f => {
               const n = countTurnos(f.id);
               return (
-                <button
+                <FrenteCardButton
                   key={f.id}
-                  type="button"
-                  onClick={() => setFrenteId(f.id)}
-                  style={{
-                    textAlign: 'left',
-                    padding: '18px 18px 16px',
-                    border: '1px solid var(--clr-border)',
-                    borderRadius: 10,
-                    background: '#fff',
-                    cursor: 'pointer',
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                    transition: 'border-color .15s, box-shadow .15s',
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = 'var(--clr-primary)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = 'var(--clr-border)';
-                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                    <span style={{ fontSize: 28 }}>{iconoFrente[f.id] ?? '🏬'}</span>
-                    <code style={{ fontSize: 11, background: '#F3F4F6', padding: '2px 6px', borderRadius: 4 }}>{f.id}</code>
-                  </div>
-                  <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{f.nombre}</div>
-                  <div style={{ fontSize: 12, color: 'var(--clr-text-muted)', marginBottom: 14, lineHeight: 1.4, minHeight: 34 }}>
-                    {f.descripcion || `Turnos operativos de ${f.nombre}`}
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--clr-primary)' }}>
-                      {n} plantilla{n === 1 ? '' : 's'}
-                    </span>
-                    <span style={{ fontSize: 12, color: 'var(--clr-primary)' }}>Gestionar →</span>
-                  </div>
-                </button>
+                  icon={ICONOS_FRENTE[f.id] ?? '🏬'}
+                  code={f.id}
+                  title={f.nombre}
+                  desc={f.descripcion || `Turnos de ${f.nombre}`}
+                  meta={`${n} plantilla${n === 1 ? '' : 's'}`}
+                  onClick={() => setFrenteLocal(f.id)}
+                />
               );
             })}
           </div>
         )}
-
-        <div className="helper-text" style={{ marginTop: 16 }}>
-          ¿Falta un frente? Créalo en <button type="button" className="btn-secondary" style={{ height: 26, fontSize: 11, margin: '0 4px' }} onClick={() => navigate('S01')}>Frentes operativos</button>
-          y vuelve aquí.
-        </div>
         <div className="screen-id">S03</div>
       </div>
     );
   }
 
-  // ── Vista: turnos del frente seleccionado ──
+  // ── Vista: turnos del frente ──
   return (
     <div style={{ padding: '24px 28px', maxWidth: 1100 }}>
       <Breadcrumb
         items={[
           { label: 'Parametrización' },
-          { label: 'Plantillas', onClick: () => setFrenteId(null) },
+          { label: 'Plantillas', onClick: () => (lockedByCtx ? clearFrenteCtx?.() : setFrenteLocal(null)) },
           { label: frente.nombre },
         ]}
         navigate={navigate}
       />
-      <GuiaLink navigate={navigate} />
       <div className="page-header">
         <div>
           <div className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span>{iconoFrente[frente.id] ?? '🏬'}</span>
+            <span>{ICONOS_FRENTE[frente.id] ?? '🏬'}</span>
             Turnos — {frente.nombre}
           </div>
           <div className="page-subtitle">
-            Plantillas del frente <code>{frente.id}</code>. Crear aquí asocia el turno a este frente. HU11–13
+            Plantillas del frente <code>{frente.id}</code>. HU11–13
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn-secondary" type="button" onClick={() => setFrenteId(null)}>← Otros frentes</button>
+          {!lockedByCtx && (
+            <button className="btn-secondary" type="button" onClick={() => setFrenteLocal(null)}>← Otros frentes</button>
+          )}
           {canEdit
             ? <button className="btn-primary" type="button" onClick={openNew}>+ Nueva plantilla</button>
             : <DisabledBtn label="+ Nueva plantilla" reason="Sin permiso" />}
@@ -771,8 +846,8 @@ function S03Plantillas({ navigate, params, onToast, role }: Props) {
       )}
 
       <div className="helper-text" style={{ marginTop: 10 }}>
-        Flujo: <strong>+ Nueva plantilla</strong> → datos básicos → horario y breaks → vuelve a este listado del frente.
-        Para gestionar otro frente, usa <strong>← Otros frentes</strong>.
+        Flujo: <strong>+ Nueva plantilla</strong> → datos básicos → horario y breaks → vuelve a este listado.
+        {!lockedByCtx && <> Para otro frente usa <strong>← Otros frentes</strong> o el dashboard.</>}
       </div>
 
       {modalOpen && (
@@ -1841,6 +1916,7 @@ function S15Import({ navigate, onToast, role }: Props) {
 // ─── Router ───────────────────────────────────────────────────────────────────
 export default function SA(props: Props) {
   const { screen } = props;
+  if (screen === 'S0D') return <S0DDashboard {...props} />;
   if (screen === 'S0P') return <S0PGuia {...props} />;
   if (screen === 'S01') return <S01Frentes {...props} />;
   if (screen === 'S02') return <S02ConfigFrente {...props} />;
@@ -1857,5 +1933,5 @@ export default function SA(props: Props) {
   if (screen === 'S13') return <S13Motor {...props} />;
   if (screen === 'S14') return <S14Avanzada {...props} />;
   if (screen === 'S15') return <S15Import {...props} />;
-  return <S0PGuia {...props} />;
+  return <S0DDashboard {...props} />;
 }

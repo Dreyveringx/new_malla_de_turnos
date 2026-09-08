@@ -2,10 +2,14 @@ import { useEffect } from 'react';
 import {
   ROLES,
   SUBMODULOS_MALLA,
+  FRENTES,
+  EMPRESA_SCOPE,
+  ICONOS_FRENTE,
   submodulosVisibles,
   submoduloDePantalla,
   puedeVerPantalla,
   permisosSubmodulo,
+  tabsDelSubmodulo,
   type Rol,
   type SubmoduloId,
 } from './data';
@@ -20,32 +24,68 @@ interface Props {
   role: Rol;
   onRoleChange: (r: Rol) => void;
   children: React.ReactNode;
+  frenteCtx?: string | null;
+  onClearFrenteCtx?: () => void;
+  onGoSubmodulo?: (entryScreen: string) => void;
 }
 
-export default function Shell({ currentScreen, navigate, role, onRoleChange, children }: Props) {
+export default function Shell({
+  currentScreen,
+  navigate,
+  role,
+  onRoleChange,
+  children,
+  frenteCtx = null,
+  onClearFrenteCtx,
+  onGoSubmodulo,
+}: Props) {
   const roleMeta = ROLES.find(r => r.id === role);
   const visibles = submodulosVisibles(role);
   const activeSubId = submoduloDePantalla(currentScreen);
   const activeSub = SUBMODULOS_MALLA.find(s => s.id === activeSubId) ?? null;
   const inModule = currentScreen !== 'home';
-  const showSectionTabs = !!activeSub && currentScreen !== 'S00';
+  const enDashboard = !!activeSub?.usaDashboardFrente && !frenteCtx;
+  const showSectionTabs = !!activeSub && currentScreen !== 'S00' && !enDashboard;
 
-  // Si el rol no tiene LEER en la pantalla actual → primer submódulo permitido o hub
+  const tabs = activeSub
+    ? tabsDelSubmodulo(activeSub.id, frenteCtx, FRENTES)
+    : [];
+
   useEffect(() => {
     if (!puedeVerPantalla(role, currentScreen)) {
       const first = submodulosVisibles(role)[0];
-      navigate(first ? first.entryScreen : 'S00');
+      if (onGoSubmodulo && first) onGoSubmodulo(first.entryScreen);
+      else navigate(first ? first.entryScreen : 'S00');
     }
-  }, [role, currentScreen, navigate]);
+  }, [role, currentScreen, navigate, onGoSubmodulo]);
 
   function goSubmodulo(id: SubmoduloId) {
     const sm = SUBMODULOS_MALLA.find(s => s.id === id);
-    if (sm) navigate(sm.entryScreen);
+    if (!sm) return;
+    if (onGoSubmodulo) onGoSubmodulo(sm.entryScreen);
+    else navigate(sm.entryScreen);
   }
 
   const permsLabel = activeSub
     ? permisosSubmodulo(role, activeSub.id).join(' · ') || 'Sin permisos'
     : '';
+
+  const frenteActivo = frenteCtx && frenteCtx !== EMPRESA_SCOPE
+    ? FRENTES.find(f => f.id === frenteCtx)
+    : null;
+  const ctxLabel = frenteCtx === EMPRESA_SCOPE
+    ? 'Catálogos de empresa'
+    : frenteActivo
+      ? `${ICONOS_FRENTE[frenteActivo.id] ?? '🏬'} ${frenteActivo.nombre}`
+      : null;
+
+  function goTab(screen: string) {
+    if (frenteCtx && frenteCtx !== EMPRESA_SCOPE) {
+      navigate(screen, { frenteId: frenteCtx });
+    } else {
+      navigate(screen);
+    }
+  }
 
   return (
     <div className="app-shell sidebar-expanded">
@@ -144,7 +184,29 @@ export default function Shell({ currentScreen, navigate, role, onRoleChange, chi
           </div>
         </header>
 
-        {/* Navegación interna del submódulo (NO es menú RBAC) */}
+        {showSectionTabs && activeSub && ctxLabel && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              padding: '8px 20px',
+              background: frenteCtx === EMPRESA_SCOPE ? '#F0F7FA' : '#EEF6F0',
+              borderBottom: '1px solid var(--clr-border)',
+              flexShrink: 0,
+            }}
+          >
+            <div style={{ fontSize: 13 }}>
+              <span style={{ color: 'var(--clr-text-muted)' }}>Contexto · </span>
+              <strong>{ctxLabel}</strong>
+            </div>
+            <button className="btn-secondary" type="button" style={{ height: 28, fontSize: 11 }} onClick={onClearFrenteCtx}>
+              ← Cambiar frente / alcance
+            </button>
+          </div>
+        )}
+
         {showSectionTabs && activeSub && (
           <nav className="section-tabs" aria-label={`Pantallas internas de ${activeSub.label}`}>
             <div className="section-tabs-meta">
@@ -154,12 +216,12 @@ export default function Shell({ currentScreen, navigate, role, onRoleChange, chi
               </span>
             </div>
             <div className="section-tabs-scroll">
-              {activeSub.pages.map(p => (
+              {tabs.map(p => (
                 <button
                   key={p.screen}
                   type="button"
                   className={`section-tab ${currentScreen === p.screen ? 'active' : ''}`}
-                  onClick={() => navigate(p.screen)}
+                  onClick={() => goTab(p.screen)}
                 >
                   {p.label}
                   {p.isNew && <span className="new-badge">NUEVO</span>}
@@ -171,7 +233,13 @@ export default function Shell({ currentScreen, navigate, role, onRoleChange, chi
           </nav>
         )}
 
-        {!showSectionTabs && inModule && currentScreen === 'S00' && (
+        {enDashboard && activeSub && (
+          <div className="hub-banner">
+            Elige un <strong>frente</strong> (o catálogos de empresa) para ver las pantallas de <strong>{activeSub.label}</strong>.
+          </div>
+        )}
+
+        {!showSectionTabs && !enDashboard && inModule && currentScreen === 'S00' && (
           <div className="hub-banner">
             Elige un submódulo del menú lateral. Solo ves los que tu rol tiene con <strong>LEER</strong>.
             Las pantallas internas (S01, S16…) no son entradas de menú con permiso propio.

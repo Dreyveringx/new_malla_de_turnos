@@ -173,7 +173,20 @@ export interface SubmoduloPage {
   screen: string;
   label: string;
   isNew?: boolean;
+  /** Si true, solo se muestra cuando el frente tiene esa capacidad */
+  requiereCapacidad?: 'usaCampanas' | 'usaTerritorioZona' | 'usaModalidad';
 }
+
+/** Scope de navegación interna tras el dashboard de frentes. */
+export type NavScope = 'dashboard' | 'empresa' | 'frente';
+export const EMPRESA_SCOPE = '__EMPRESA__';
+
+export const ICONOS_FRENTE: Record<string, string> = {
+  CC: '🎧',
+  SITIO: '🛠️',
+  MESA: '🖥️',
+  LAB: '🔬',
+};
 
 /** Los 5 submódulos de menú (HU01). Pantallas Sxx = navegación interna, no ítems RBAC. */
 export const SUBMODULOS_MALLA: {
@@ -183,29 +196,56 @@ export const SUBMODULOS_MALLA: {
   route: string;
   entryScreen: string;
   desc: string;
+  /** true = primero elige frente (o Empresa) antes de ver tabs */
+  usaDashboardFrente?: boolean;
   pages: SubmoduloPage[];
+  pagesEmpresa?: SubmoduloPage[];
+  pagesFrente?: SubmoduloPage[];
 }[] = [
   {
     id: 'parametrizacion',
     label: 'Parametrización',
     icon: '⚙️',
     route: 'malla-turnos/main/parametrizacion',
-    entryScreen: 'S0P',
+    entryScreen: 'S0D',
     desc: 'Catálogos del módulo: frentes, turnos, estados, reglas…',
-    pages: [
+    usaDashboardFrente: true,
+    pagesEmpresa: [
       { screen: 'S0P', label: 'Guía de arranque', isNew: true },
-      { screen: 'S01', label: '1. Frentes operativos' },
-      { screen: 'S03', label: '2. Plantillas de turno' },
-      { screen: 'S05', label: '3. Estados de celda' },
-      { screen: 'S08', label: '4. Modalidades' },
-      { screen: 'S09', label: '5. Sitios de asistencia' },
-      { screen: 'S06', label: '6. Campañas / tareas' },
-      { screen: 'S07', label: '7. Territorio (SPT…)' },
-      { screen: 'S10', label: '8. Restricciones persona' },
-      { screen: 'S11', label: '9. Festivos · Cortes · Horas' },
-      { screen: 'S12', label: '10. Cobertura / compensatorio' },
-      { screen: 'S13', label: '11. Motor de reglas', isNew: true },
+      { screen: 'S01', label: 'Frentes operativos' },
+      { screen: 'S05', label: 'Estados de celda' },
+      { screen: 'S11', label: 'Festivos · Cortes · Horas' },
       { screen: 'S15', label: 'Importación Excel', isNew: true },
+    ],
+    pagesFrente: [
+      { screen: 'S02', label: 'Configuración' },
+      { screen: 'S03', label: 'Plantillas de turno' },
+      { screen: 'S08', label: 'Modalidades', requiereCapacidad: 'usaModalidad' },
+      { screen: 'S09', label: 'Sitios de asistencia' },
+      { screen: 'S06', label: 'Campañas / tareas', requiereCapacidad: 'usaCampanas' },
+      { screen: 'S07', label: 'Territorio (SPT…)', requiereCapacidad: 'usaTerritorioZona' },
+      { screen: 'S10', label: 'Restricciones' },
+      { screen: 'S12', label: 'Cobertura / compensatorio' },
+      { screen: 'S13', label: 'Motor de reglas', isNew: true },
+    ],
+    // Unión para lookup de pantallas (no se muestran todas a la vez)
+    pages: [
+      { screen: 'S0D', label: 'Dashboard frentes' },
+      { screen: 'S0P', label: 'Guía de arranque' },
+      { screen: 'S01', label: 'Frentes' },
+      { screen: 'S02', label: 'Configuración' },
+      { screen: 'S03', label: 'Plantillas' },
+      { screen: 'S04', label: 'Horario turno' },
+      { screen: 'S05', label: 'Estados' },
+      { screen: 'S06', label: 'Campañas' },
+      { screen: 'S07', label: 'Territorio' },
+      { screen: 'S08', label: 'Modalidades' },
+      { screen: 'S09', label: 'Sitios' },
+      { screen: 'S10', label: 'Restricciones' },
+      { screen: 'S11', label: 'Festivos' },
+      { screen: 'S12', label: 'Cobertura' },
+      { screen: 'S13', label: 'Motor' },
+      { screen: 'S15', label: 'Importación' },
     ],
   },
   {
@@ -276,6 +316,19 @@ export const SUBMODULOS_MALLA: {
   },
 ];
 
+/** Tabs visibles según dashboard: Empresa vs frente (capacidades). */
+export function tabsDelSubmodulo(smId: SubmoduloId, frenteCtx: string | null, frentes: Frente[]): SubmoduloPage[] {
+  const sm = SUBMODULOS_MALLA.find(s => s.id === smId);
+  if (!sm) return [];
+  if (!sm.usaDashboardFrente) return sm.pages;
+  if (!frenteCtx) return [];
+  if (frenteCtx === EMPRESA_SCOPE) return sm.pagesEmpresa ?? [];
+  const frente = frentes.find(f => f.id === frenteCtx);
+  return (sm.pagesFrente ?? []).filter(p => {
+    if (!p.requiereCapacidad || !frente) return true;
+    return !!frente[p.requiereCapacidad];
+  });
+}
 /** Matriz demo = lo que en GRH vive en permission_submodules por rol de empresa. */
 export const ROLE_SUBMODULE_PERMS: Record<Rol, Partial<Record<SubmoduloId, PermisoCrud[]>>> = {
   coordinadora_cc: {
@@ -314,8 +367,11 @@ export const ROLES: { id: Rol; label: string; desc: string }[] = [
 
 export function submoduloDePantalla(screen: string): SubmoduloId | null {
   if (screen === 'S00' || screen === 'home') return null;
+  if (screen === 'S0D' || screen === 'S0P') return 'parametrizacion';
   for (const sm of SUBMODULOS_MALLA) {
     if (sm.pages.some(p => p.screen === screen) || sm.entryScreen === screen) return sm.id;
+    if (sm.pagesEmpresa?.some(p => p.screen === screen)) return sm.id;
+    if (sm.pagesFrente?.some(p => p.screen === screen)) return sm.id;
   }
   const n = parseInt(screen.replace('S', ''), 10);
   if (Number.isNaN(n)) return null;

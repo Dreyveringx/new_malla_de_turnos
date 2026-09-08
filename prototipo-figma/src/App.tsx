@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import Shell from './Shell';
 import type { Rol } from './data';
+import { EMPRESA_SCOPE, submoduloDePantalla, SUBMODULOS_MALLA } from './data';
 import S00Hub from './screens/S00Hub';
 import SA from './screens/SA';
 import SB from './screens/SB';
@@ -21,10 +22,38 @@ export default function App() {
   const [params, setParams] = useState<any>(null);
   const [role, setRole] = useState<Rol>('coordinadora_cc');
   const [toasts, setToasts] = useState<Toast[]>([]);
+  /** null = dashboard; EMPRESA_SCOPE = catálogos empresa; id de frente = contexto operativo */
+  const [frenteCtx, setFrenteCtx] = useState<string | null>(null);
 
   const navigate = useCallback((s: string, p?: any) => {
     setScreen(s);
-    setParams(p ?? null);
+    const nextParams = p === undefined ? null : p;
+    setParams(nextParams);
+    if (s === 'S0D' || s === 'S00') {
+      setFrenteCtx(null);
+    } else if (nextParams?.frenteId) {
+      setFrenteCtx(nextParams.frenteId);
+    }
+  }, []);
+
+  const enterEmpresa = useCallback(() => {
+    setFrenteCtx(EMPRESA_SCOPE);
+    navigate('S0P');
+  }, [navigate]);
+
+  const enterFrente = useCallback((frenteId: string) => {
+    setFrenteCtx(frenteId);
+    navigate('S02', { frenteId });
+  }, [navigate]);
+
+  const clearFrenteCtx = useCallback(() => {
+    setFrenteCtx(null);
+  }, []);
+
+  const goSubmodulo = useCallback((entryScreen: string) => {
+    setFrenteCtx(null);
+    setScreen(entryScreen);
+    setParams(null);
   }, []);
 
   const showToast = useCallback((msg: string, desc: string, type: Toast['type']) => {
@@ -33,13 +62,36 @@ export default function App() {
     setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 4500);
   }, []);
 
-  const screenProps = { screen, navigate, params, onToast: showToast, role };
+  const screenProps = {
+    screen,
+    navigate,
+    params,
+    onToast: showToast,
+    role,
+    frenteCtx,
+    enterFrente,
+    enterEmpresa,
+    clearFrenteCtx,
+  };
   const num = parseInt(screen.replace('S', ''), 10);
-  const isParam = screen === 'S0P' || (num >= 1 && num <= 15);
+  const isParam = screen === 'S0P' || screen === 'S0D' || (num >= 1 && num <= 15);
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <Shell currentScreen={screen} navigate={navigate} role={role} onRoleChange={setRole}>
+      <Shell
+        currentScreen={screen}
+        navigate={navigate}
+        role={role}
+        onRoleChange={setRole}
+        frenteCtx={frenteCtx}
+        onClearFrenteCtx={() => {
+          clearFrenteCtx();
+          const sm = submoduloDePantalla(screen);
+          const entry = SUBMODULOS_MALLA.find(s => s.id === sm)?.entryScreen ?? 'S0D';
+          navigate(entry);
+        }}
+        onGoSubmodulo={goSubmodulo}
+      >
         {screen === 'S00' && <S00Hub navigate={navigate} role={role} />}
         {screen === 'home' && <HomeRedirect navigate={navigate} />}
         {isParam && <SA {...screenProps} />}
@@ -50,7 +102,6 @@ export default function App() {
         {num >= 38 && num <= 43 && <SF {...screenProps} />}
       </Shell>
 
-      {/* Toasts */}
       <div className="toast-container" role="region" aria-live="polite" aria-label="Notificaciones">
         {toasts.map(t => (
           <div key={t.id} className={`toast toast-${t.type}`} role="alert">
