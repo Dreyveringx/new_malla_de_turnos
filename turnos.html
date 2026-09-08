@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="es" data-mode="light" data-accent="navy">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Malla de Turnos — Fase 1: Elicitación de requisitos</title>
+<script>
+  (function(){
+    try {
+      var t = JSON.parse(localStorage.getItem("malla-theme") || "{}");
+      var mode = t.mode || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      var accent = t.accent || "navy";
+      document.documentElement.setAttribute("data-mode", mode);
+      document.documentElement.setAttribute("data-accent", accent);
+    } catch (e) {}
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3F5FA;
+    --surface:#FFFFFF;
+    --surface-muted:#EBEFF6;
+    --ink:#12151E;
+    --ink-muted:#525A6C;
+    --ink-faint:#8991A3;
+    --border:#E1E5EF;
+
+    --brand:#1E3A5F;
+    --brand-strong:#122741;
+    --brand-soft:#DCE7F3;
+
+    --amber:#D98A2B;
+    --amber-bg:#FAECD9;
+    --amber-ink:#7A4A0D;
+
+    --teal:#20808E;
+    --teal-bg:#DDF0F1;
+    --teal-ink:#0F4D56;
+
+    --violet:#6D5AA0;
+    --violet-bg:#EAE5F6;
+    --violet-ink:#453270;
+
+    --green:#3D8A5C;
+    --green-bg:#DFF0E5;
+    --green-ink:#255C3B;
+
+    --danger:#B3453F;
+    --danger-bg:#F8E4E2;
+    --danger-ink:#7A2C27;
+
+    --warn:#C07C10;
+    --warn-bg:#FBEED8;
+    --warn-ink:#6E4508;
+
+    --shadow: 0 1px 2px rgba(18,21,30,0.04), 0 12px 28px -14px rgba(18,21,30,0.18);
+    color-scheme: light;
+  }
+
+  /* ===== Theme: accents (PrimeNG-style palettes) ===== */
+  html[data-accent="navy"]{
+    --brand:#1E3A5F; --brand-strong:#122741; --brand-soft:#DCE7F3;
+  }
+  html[data-accent="azure"]{
+    --brand:#2563EB; --brand-strong:#1E40AF; --brand-soft:#DBEAFE;
+  }
+  html[data-accent="teal"]{
+    --brand:#0F766E; --brand-strong:#115E59; --brand-soft:#CCFBF1;
+  }
+  html[data-accent="violet"]{
+    --brand:#6D28D9; --brand-strong:#5B21B6; --brand-soft:#EDE9FE;
+  }
+  html[data-accent="emerald"]{
+    --brand:#047857; --brand-strong:#065F46; --brand-soft:#D1FAE5;
+  }
+  html[data-accent="amber"]{
+    --brand:#B45309; --brand-strong:#92400E; --brand-soft:#FEF3C7;
+  }
+  html[data-accent="rose"]{
+    --brand:#BE123C; --brand-strong:#9F1239; --brand-soft:#FFE4E6;
+  }
+  html[data-accent="slate"]{
+    --brand:#334155; --brand-strong:#1E293B; --brand-soft:#E2E8F0;
+  }
+
+  /* ===== Theme: dark mode ===== */
+  html[data-mode="dark"]{
+    color-scheme: dark;
+    --bg:#0F1219;
+    --surface:#181C27;
+    --surface-muted:#222736;
+    --ink:#E8EBF2;
+    --ink-muted:#A8B0C0;
+    --ink-faint:#6B7385;
+    --border:#2A3142;
+    --shadow: 0 1px 2px rgba(0,0,0,0.28), 0 16px 36px -16px rgba(0,0,0,0.55);
+
+    --amber:#E0A04A;
+    --amber-bg:#3A2A16;
+    --amber-ink:#F3D5A0;
+    --teal:#4DB8C4;
+    --teal-bg:#16383C;
+    --teal-ink:#B7E4E8;
+    --violet:#B4A3E0;
+    --violet-bg:#2E2744;
+    --violet-ink:#DDD6FE;
+    --green:#6FBF8D;
+    --green-bg:#1C3A2A;
+    --green-ink:#C5EBD3;
+    --danger:#E07A74;
+    --danger-bg:#3D2220;
+    --danger-ink:#F5C4C0;
+    --warn:#E0B05A;
+    --warn-bg:#3A2E16;
+    --warn-ink:#F6DFA8;
+  }
+  html[data-mode="dark"][data-accent="navy"]{
+    --brand:#8AADDB; --brand-strong:#D6E6F7; --brand-soft:#1A2C45;
+  }
+  html[data-mode="dark"][data-accent="azure"]{
+    --brand:#60A5FA; --brand-strong:#BFDBFE; --brand-soft:#15233F;
+  }
+  html[data-mode="dark"][data-accent="teal"]{
+    --brand:#5EEAD4; --brand-strong:#99F6E4; --brand-soft:#123330;
+  }
+  html[data-mode="dark"][data-accent="violet"]{
+    --brand:#C4B5FD; --brand-strong:#DDD6FE; --brand-soft:#2A1F4A;
+  }
+  html[data-mode="dark"][data-accent="emerald"]{
+    --brand:#6EE7B7; --brand-strong:#A7F3D0; --brand-soft:#12352C;
+  }
+  html[data-mode="dark"][data-accent="amber"]{
+    --brand:#FBBF24; --brand-strong:#FDE68A; --brand-soft:#3A2A10;
+  }
+  html[data-mode="dark"][data-accent="rose"]{
+    --brand:#FB7185; --brand-strong:#FECDD3; --brand-soft:#3A1520;
+  }
+  html[data-mode="dark"][data-accent="slate"]{
+    --brand:#94A3B8; --brand-strong:#E2E8F0; --brand-soft:#1E2533;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Inter","Segoe UI",system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+    transition: background-color .22s ease, color .22s ease;
+  }
+  h1,h2,h3{
+    font-family:"Fraunces",Georgia,serif;
+    color:var(--ink);
+    letter-spacing:-0.01em;
+    font-weight:700;
+  }
+  .mono{font-family:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;}
+  a{color:var(--teal);}
+  :focus-visible{outline:2px solid var(--brand); outline-offset:2px;}
+  strong,b{font-weight:600; color:var(--ink);}
+
+  /* ===== Layout shell ===== */
+  .shell{
+    display:grid;
+    grid-template-columns:232px minmax(0,800px);
+    justify-content:center;
+    gap:56px;
+    max-width:1200px;
+    margin:0 auto;
+    padding:44px 24px 100px;
+  }
+  @media (max-width:960px){
+    .shell{grid-template-columns:minmax(0,1fr); padding:26px 18px 88px;}
+    .rail{display:none;}
+  }
+
+  /* ===== Sticky rail nav ===== */
+  .rail{position:sticky; top:32px; align-self:start; height:fit-content;}
+  .rail-label{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:10.5px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    margin:0 0 14px;
+  }
+  .rail ol{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:1px;}
+  .rail a{
+    display:flex; gap:9px;
+    padding:6px 8px;
+    border-radius:6px;
+    text-decoration:none;
+    color:var(--ink-muted);
+    font-size:13px;
+    line-height:1.35;
+  }
+  .rail a:hover{background:var(--surface-muted); color:var(--ink);}
+  .rail .num{font-family:"IBM Plex Mono",monospace; color:var(--ink-faint); font-size:11px; padding-top:1px;}
+
+  /* ===== Shift strip — signature element ===== */
+  .shift-strip{display:flex; flex-direction:column; gap:6px;}
+  .shift-strip .bar{
+    display:flex; width:100%; height:14px; border-radius:7px; overflow:hidden;
+    box-shadow:inset 0 0 0 1px rgba(18,21,30,0.06);
+  }
+  .shift-strip .bar span{display:block; height:100%;}
+  .shift-strip.thin .bar{height:5px; border-radius:3px;}
+  .seg-noche{background:var(--violet);}
+  .seg-manana{background:var(--amber);}
+  .seg-tarde{background:var(--teal);}
+  .shift-strip .ticks{
+    display:flex; justify-content:space-between;
+    font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--ink-faint);
+    padding:0 1px;
+  }
+  .shift-legend{
+    display:flex; flex-wrap:wrap; gap:14px; margin-top:10px;
+  }
+  .shift-legend span{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-muted);
+  }
+  .shift-legend i{width:9px; height:9px; border-radius:2px; display:inline-block;}
+
+  /* ===== Header / hero ===== */
+  .doc-header{
+    position:relative;
+    border:1px solid var(--border);
+    background:var(--surface);
+    border-radius:16px;
+    padding:38px 34px 32px;
+    box-shadow:var(--shadow);
+    margin-bottom:10px;
+    overflow:hidden;
+  }
+  .doc-eyebrow{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:11.5px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--brand);
+    font-weight:600;
+    margin:0 0 12px;
+  }
+  .doc-header h1{
+    font-size:clamp(28px,4vw,40px);
+    font-weight:700;
+    margin:0 0 12px;
+    line-height:1.14;
+    color:var(--brand-strong);
+  }
+  .doc-sub{color:var(--ink-muted); margin:0 0 26px; font-size:16px; max-width:64ch;}
+
+  .meta-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:16px;
+    border-top:1px solid var(--border);
+    padding-top:20px;
+    margin-bottom:26px;
+  }
+  .meta-item .k{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:10.5px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    margin:0 0 4px;
+  }
+  .meta-item .v{font-size:14.5px; color:var(--ink); font-weight:600;}
+  .meta-item .v span{font-weight:400; color:var(--ink-muted);}
+
+  /* ===== Sections ===== */
+  section{margin-top:58px; scroll-margin-top:28px;}
+  .eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:9px;
+    font-family:"IBM Plex Mono",monospace;
+    font-size:11.5px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--brand);
+    margin:0 0 12px;
+  }
+  .eyebrow .idx{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:21px; height:21px; border-radius:6px;
+    background:var(--brand-soft); color:var(--brand-strong);
+    font-size:10.5px; font-weight:600;
+  }
+  section h2{font-size:24px; font-weight:700; margin:0 0 14px;}
+  section > p.lead{color:var(--ink-muted); font-size:15.5px; max-width:72ch; margin:0 0 22px;}
+  h3{font-size:16.5px; font-weight:700; margin:0 0 6px;}
+
+  p{margin:0 0 14px; max-width:74ch;}
+  ul,ol.plain{margin:0 0 14px; padding-left:22px;}
+  li{margin-bottom:6px;}
+
+  /* ===== Hallazgo / callout ===== */
+  .callout{
+    background:var(--brand-soft);
+    border:1px solid color-mix(in srgb, var(--brand) 25%, transparent);
+    border-left:4px solid var(--brand);
+    border-radius:12px;
+    padding:20px 24px;
+    font-size:15.5px;
+    color:var(--ink);
+    margin-bottom:20px;
+  }
+  .callout b{color:var(--brand-strong);}
+
+  .finding-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:12px;
+    margin-bottom:8px;
+  }
+  .finding-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px 16px;
+    box-shadow:var(--shadow);
+  }
+  .finding-card .tag{margin-bottom:8px;}
+  .finding-card dl{margin:0; font-size:13px; color:var(--ink-muted);}
+  .finding-card dt{font-family:"IBM Plex Mono",monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-faint); margin-top:8px;}
+  .finding-card dt:first-child{margin-top:0;}
+  .finding-card dd{margin:2px 0 0; color:var(--ink);}
+
+  /* ===== Tags ===== */
+  .tag{
+    display:inline-flex; align-items:center;
+    font-family:"IBM Plex Mono",monospace;
+    font-size:11px; letter-spacing:0.03em;
+    padding:4px 10px; border-radius:100px;
+    font-weight:600;
+    border:1px solid transparent;
+  }
+  .tag-cc{color:var(--violet-ink); background:var(--violet-bg); border-color:color-mix(in srgb, var(--violet) 35%, transparent);}
+  .tag-soporte{color:var(--amber-ink); background:var(--amber-bg); border-color:color-mix(in srgb, var(--amber) 35%, transparent);}
+  .tag-mesa{color:var(--teal-ink); background:var(--teal-bg); border-color:color-mix(in srgb, var(--teal) 35%, transparent);}
+  .tag-lab{color:var(--green-ink); background:var(--green-bg); border-color:color-mix(in srgb, var(--green) 35%, transparent);}
+  .tag-general{color:var(--brand-strong); background:var(--brand-soft); border-color:color-mix(in srgb, var(--brand) 30%, transparent);}
+  .tag-p0{color:var(--danger-ink); background:var(--danger-bg);}
+  .tag-p1{color:var(--warn-ink); background:var(--warn-bg);}
+  .tag-p2{color:var(--ink-muted); background:var(--surface-muted);}
+
+  /* ===== Area cards ===== */
+  .card-grid{display:flex; flex-direction:column; gap:16px;}
+  .area-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:22px 24px;
+    box-shadow:var(--shadow);
+    border-left:5px solid var(--brand);
+  }
+  .area-card.cc{border-left-color:var(--violet);}
+  .area-card.soporte{border-left-color:var(--amber);}
+  .area-card.mesa{border-left-color:var(--teal);}
+  .area-card.lab{border-left-color:var(--green);}
+  .area-card .head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px; flex-wrap:wrap;}
+  .area-card .head h3{margin:0;}
+  .area-card.cc .head h3{color:var(--violet-ink);}
+  .area-card.soporte .head h3{color:var(--amber-ink);}
+  .area-card.mesa .head h3{color:var(--teal-ink);}
+  .area-card.lab .head h3{color:var(--green-ink);}
+  .area-card .who{color:var(--ink-faint); font-size:12.5px; margin:2px 0 14px; font-family:"IBM Plex Mono",monospace;}
+  .area-card ul{margin-bottom:0;}
+  .area-card ul li{font-size:14.5px; color:var(--ink-muted);}
+  .area-card ul li b{color:var(--ink); font-weight:600;}
+
+  /* ===== Data model diagram ===== */
+  .model-diagram{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:26px 28px;
+    box-shadow:var(--shadow);
+    margin-bottom:18px;
+  }
+  .model-row{
+    display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;
+  }
+  .model-row:last-child{margin-bottom:0;}
+  .model-box{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:12.5px;
+    padding:8px 14px;
+    border-radius:8px;
+    background:var(--surface-muted);
+    border:1px solid var(--border);
+    color:var(--ink);
+    white-space:nowrap;
+  }
+  .model-box.core{background:var(--brand-soft); border-color:color-mix(in srgb, var(--brand) 30%, transparent); color:var(--brand-strong); font-weight:600;}
+  .model-arrow{color:var(--ink-faint); font-size:15px;}
+  .model-indent{padding-left:28px;}
+  .model-note{font-size:12.5px; color:var(--ink-faint); margin-top:14px; padding-top:14px; border-top:1px dashed var(--border);}
+
+  .definition-box{
+    background:var(--teal-bg);
+    border:1px solid color-mix(in srgb, var(--teal) 30%, transparent);
+    border-radius:12px;
+    padding:18px 22px;
+    font-size:15px;
+    color:var(--teal-ink);
+    font-family:"Fraunces",serif;
+    font-style:italic;
+    line-height:1.6;
+  }
+  .definition-box b{color:var(--teal-ink);}
+
+  /* ===== Feature blocks (F1-F8) ===== */
+  .feature{
+    position:relative;
+    border:1px solid var(--border);
+    border-radius:12px;
+    background:var(--surface);
+    padding:22px 24px;
+    margin-bottom:14px;
+    box-shadow:var(--shadow);
+    border-left:4px solid var(--brand);
+  }
+  .feature .head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px;}
+  .feature h3{margin:0; color:var(--brand-strong);}
+  .feature p{margin-bottom:12px; font-size:14.5px; color:var(--ink-muted);}
+  .feature .criteria-label{
+    font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--ink-faint); margin:14px 0 8px; padding-top:12px; border-top:1px solid var(--border);
+  }
+  .check-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px;}
+  .check-list li{
+    display:flex; gap:10px; align-items:flex-start;
+    font-size:14px; color:var(--ink);
+    margin-bottom:0;
+  }
+  .check-list li::before{
+    content:"";
+    flex:none;
+    width:14px; height:14px;
+    margin-top:3px;
+    border-radius:4px;
+    border:1.5px solid var(--brand);
+    background:var(--brand-soft);
+  }
+  .pending-note{
+    display:flex; gap:10px; align-items:flex-start;
+    font-size:13.5px; color:var(--warn-ink); background:var(--warn-bg);
+    border-radius:8px; padding:9px 12px; margin-top:12px;
+  }
+
+  /* ===== Rules table (bloquea/advierte) ===== */
+  .tbl-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:12px; background:var(--surface); box-shadow:var(--shadow);}
+  table{border-collapse:collapse; width:100%; min-width:560px; font-size:13.8px;}
+  th,td{text-align:left; padding:11px 16px; border-bottom:1px solid var(--border); vertical-align:top;}
+  th{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--brand-strong); font-weight:600;
+    background:var(--brand-soft);
+  }
+  tr:last-child td{border-bottom:none;}
+  td.num{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; color:var(--ink-muted);}
+  .pill{
+    display:inline-flex; padding:3px 10px; border-radius:100px; font-size:11.5px; font-weight:600;
+    font-family:"IBM Plex Mono",monospace;
+  }
+  .pill-block{background:var(--danger-bg); color:var(--danger-ink);}
+  .pill-warn{background:var(--warn-bg); color:var(--warn-ink);}
+  .pill-sys{background:var(--surface-muted); color:var(--ink-muted);}
+
+  /* ===== NFR grid ===== */
+  .nfr-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px;
+  }
+  .nfr-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:16px 18px; box-shadow:var(--shadow); border-top:3px solid var(--brand);
+  }
+  .nfr-card h3{font-size:14.5px; margin-bottom:6px; color:var(--brand-strong);}
+  .nfr-card p{font-size:13.5px; color:var(--ink-muted); margin-bottom:0;}
+
+  /* ===== Risk list ===== */
+  .risk-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px;}
+  .risk-list li{
+    display:flex; gap:14px;
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:14px 18px; font-size:14.5px; color:var(--ink);
+    box-shadow:var(--shadow);
+  }
+  .risk-num{
+    flex:none; font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:13px;
+    color:var(--brand); background:var(--brand-soft); width:24px; height:24px;
+    display:flex; align-items:center; justify-content:center; border-radius:6px;
+  }
+  .risk-list li p{margin:0; color:var(--ink-muted); font-size:13.8px;}
+
+  /* ===== Open questions ===== */
+  .oq-group{margin-bottom:22px;}
+  .oq-group:last-child{margin-bottom:0;}
+  .oq-group-title{
+    display:flex; align-items:center; gap:8px; margin-bottom:12px;
+  }
+  .oq-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px;}
+  .oq-list li{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-left:4px solid var(--warn);
+    border-radius:10px;
+    padding:13px 16px;
+    font-size:14.5px;
+    color:var(--ink);
+    margin-bottom:0;
+  }
+  .oq-list.blocker li{border-left-color:var(--danger);}
+  .oq-list li .lbl{
+    display:block;
+    font-family:"IBM Plex Mono",monospace;
+    font-size:10.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--warn-ink);
+    margin-bottom:4px;
+  }
+  .oq-list.blocker li .lbl{color:var(--danger-ink);}
+
+  /* ===== Timeline ===== */
+  .timeline{list-style:none; margin:0; padding:0; display:flex; flex-direction:column;}
+  .timeline li{
+    position:relative;
+    padding:0 0 24px 32px;
+    border-left:2px solid var(--border);
+    margin-bottom:0;
+    font-size:14.5px;
+  }
+  .timeline li:last-child{border-left-color:transparent; padding-bottom:0;}
+  .timeline li::before{
+    content:"";
+    position:absolute; left:-7px; top:2px;
+    width:12px; height:12px; border-radius:50%;
+    background:var(--brand); border:2px solid var(--surface);
+    box-shadow:0 0 0 1.5px var(--brand);
+  }
+  .timeline .t-lbl{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:11px; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--brand); display:block; margin-bottom:4px;
+  }
+  .timeline .t-body{color:var(--ink-muted);}
+  .timeline .t-body b{color:var(--ink); font-weight:600;}
+
+  /* ===== Glossary ===== */
+  .glossary-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:2px 24px;
+  }
+  .glossary-grid dt{
+    font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600;
+    color:var(--brand-strong); margin-top:12px;
+  }
+  .glossary-grid dd{margin:2px 0 0; font-size:13.8px; color:var(--ink-muted);}
+
+  /* ===== Roles list ===== */
+  .role-note{font-size:13px; color:var(--ink-faint); margin-top:10px;}
+
+  footer{
+    margin-top:70px;
+    padding-top:24px;
+    border-top:1px solid var(--border);
+    font-size:12.5px;
+    color:var(--ink-faint);
+  }
+
+  /* ===== Theme dock (PrimeNG-style configurator) ===== */
+  .theme-dock{
+    position:fixed;
+    right:20px;
+    bottom:20px;
+    z-index:80;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:10px;
+    user-select:none;
+  }
+  .theme-toggle{
+    appearance:none;
+    width:48px;
+    height:48px;
+    border-radius:50%;
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--brand);
+    box-shadow:var(--shadow);
+    cursor:pointer;
+    display:grid;
+    place-items:center;
+    padding:0;
+  }
+  .theme-toggle svg{width:22px; height:22px; display:block;}
+  .theme-toggle .icon-close{display:none;}
+  .theme-dock.is-open .theme-toggle .icon-palette{display:none;}
+  .theme-dock.is-open .theme-toggle .icon-close{display:block;}
+  .theme-dock.is-open .theme-toggle{
+    background:var(--brand);
+    color:var(--surface);
+    border-color:transparent;
+  }
+  .theme-panel{
+    position:absolute;
+    right:0;
+    bottom:58px;
+    width:220px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:14px 14px 12px;
+    box-shadow:var(--shadow);
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    transform:translateY(10px) scale(0.96);
+    transform-origin:bottom right;
+    transition:opacity .18s ease, transform .18s ease, visibility .18s;
+  }
+  .theme-dock.is-open .theme-panel{
+    opacity:1;
+    visibility:visible;
+    pointer-events:auto;
+    transform:none;
+  }
+  .theme-dock-label{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:10px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+    margin:0 0 8px;
+  }
+  .theme-modes{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:4px;
+    background:var(--surface-muted);
+    padding:4px;
+    border-radius:10px;
+    margin-bottom:12px;
+  }
+  .theme-mode{
+    appearance:none;
+    border:0;
+    background:transparent;
+    color:var(--ink-muted);
+    border-radius:8px;
+    padding:7px 8px;
+    font:600 12px/1 "Inter",system-ui,sans-serif;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+  }
+  .theme-mode svg{width:14px; height:14px; flex:none;}
+  .theme-mode[aria-pressed="true"]{
+    background:var(--surface);
+    color:var(--ink);
+    box-shadow:0 1px 2px rgba(18,21,30,0.08);
+  }
+  html[data-mode="dark"] .theme-mode[aria-pressed="true"]{
+    box-shadow:0 1px 2px rgba(0,0,0,0.35);
+  }
+  .theme-swatches{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .theme-swatch{
+    appearance:none;
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    padding:0;
+    cursor:pointer;
+    background:var(--swatch-color);
+    border:2px solid var(--surface);
+    box-shadow:0 0 0 1px var(--border);
+  }
+  .theme-swatch:hover{transform:scale(1.08);}
+  .theme-swatch[aria-pressed="true"]{
+    box-shadow:0 0 0 2px var(--surface), 0 0 0 4px var(--brand);
+  }
+  .theme-dock button:focus-visible{
+    outline:2px solid var(--brand);
+    outline-offset:2px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    body{transition:none;}
+    .theme-swatch:hover{transform:none;}
+    .theme-panel{transition:none;}
+  }
+
+  @media (max-width:960px){
+    .theme-dock{right:12px; bottom:12px;}
+    .theme-mode span{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0);}
+    .theme-modes{margin-bottom:10px;}
+  }
+
+  @media print{
+    .rail, .theme-dock{display:none;}
+    .shell{grid-template-columns:1fr; max-width:100%;}
+    body{background:#fff;}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav class="rail" aria-label="Contenido">
+    <p class="rail-label">Contenido</p>
+    <ol>
+      <li><a href="#hallazgo"><span class="num">00</span> Hallazgo principal</a></li>
+      <li><a href="#contexto"><span class="num">01</span> Contexto</a></li>
+      <li><a href="#alcance"><span class="num">02</span> Objetivo y alcance</a></li>
+      <li><a href="#situacion"><span class="num">03</span> Situación actual</a></li>
+      <li><a href="#modelo"><span class="num">04</span> Qué es una malla</a></li>
+      <li><a href="#funcionalidad"><span class="num">05</span> Funcionalidad</a></li>
+      <li><a href="#reglas"><span class="num">06</span> Reglas de negocio</a></li>
+      <li><a href="#roles"><span class="num">07</span> Roles y permisos</a></li>
+      <li><a href="#nfr"><span class="num">08</span> No funcionales</a></li>
+      <li><a href="#diferencias"><span class="num">09</span> Diferencias por área</a></li>
+      <li><a href="#riesgos"><span class="num">10</span> Riesgos</a></li>
+      <li><a href="#pendientes"><span class="num">11</span> Puntos abiertos</a></li>
+      <li><a href="#insumos"><span class="num">12</span> Insumos</a></li>
+      <li><a href="#pasos"><span class="num">13</span> Próximos pasos</a></li>
+      <li><a href="#glosario"><span class="num">14</span> Glosario</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <div class="doc-header">
+      <p class="doc-eyebrow">Módulo GRH · Malla de turnos — Cierre de Fase 1</p>
+      <h1>Un módulo para dejar de programar turnos en Excel</h1>
+      <p class="doc-sub">Versión consolidada del levantamiento de requisitos para el nuevo módulo de programación de turnos de la plataforma GRH. Reúne la reunión del 27 de agosto de 2026 y los dos documentos de trabajo derivados de ella en una sola lectura, pensada para validar con las áreas y dar paso a historias de usuario y mockups.</p>
+
+      <div class="shift-strip" style="margin-bottom:22px;">
+        <div class="bar" role="img" aria-label="Franja de 24 horas dividida en turno noche, mañana y tarde">
+          <span class="seg-noche" style="width:25%"></span>
+          <span class="seg-manana" style="width:33.3%"></span>
+          <span class="seg-tarde" style="width:33.3%"></span>
+          <span class="seg-noche" style="width:8.4%"></span>
+        </div>
+        <div class="ticks"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
+        <div class="shift-legend">
+          <span><i style="background:var(--violet)"></i>Turno noche</span>
+          <span><i style="background:var(--amber)"></i>Turno mañana</span>
+          <span><i style="background:var(--teal)"></i>Turno tarde</span>
+        </div>
+      </div>
+
+      <div class="meta-grid">
+        <div class="meta-item"><p class="k">Fecha de la reunión</p><p class="v">27 ago 2026 <span>· 3:04 p.m.</span></p></div>
+        <div class="meta-item"><p class="k">Duración</p><p class="v">1 h 29 min</p></div>
+        <div class="meta-item"><p class="k">Participantes</p><p class="v">12 <span>personas · 3 frentes</span></p></div>
+        <div class="meta-item"><p class="k">Estado</p><p class="v">Borrador de negocio <span>· sin diseño cerrado</span></p></div>
+        <div class="meta-item"><p class="k">Próxima sesión</p><p class="v">7–11 sept 2026</p></div>
+        <div class="meta-item"><p class="k">Cadencia</p><p class="v">Cada 15 días <span>· jueves</span></p></div>
+      </div>
+    </div>
+
+    <section id="hallazgo">
+      <p class="eyebrow"><span class="idx">00</span>Resumen ejecutivo</p>
+      <h2>El hallazgo que define todo el diseño</h2>
+      <div class="callout">
+        No existe <b>una</b> malla de turnos que rediseñar: existen <b>tres frentes operativos</b> (Contact Center, Soporte Técnico y Mesa de Servicio de segundo nivel), cada uno con su propio Excel, su propio ritmo de cambio y sus propias reglas. <b>Construir una sola pantalla rígida para los tres sería repetir el problema que hoy tienen en Excel</b>, solo que dentro de la plataforma. El módulo debe nacer parametrizable por área desde el primer día.
+      </div>
+      <div class="finding-grid">
+        <div class="finding-card">
+          <span class="tag tag-contact tag-cc">Contact Center</span>
+          <dl>
+            <dt>Construye</dt><dd>Supervisoras</dd>
+            <dt>Publica</dt><dd>Coordinador (Oscar Acuña)</dd>
+            <dt>Horizonte</dt><dd>Mensual, 1 semana antes</dd>
+            <dt>Cambia</dt><dd>Por novedad puntual</dd>
+          </dl>
+        </div>
+        <div class="finding-card">
+          <span class="tag tag-soporte">Soporte técnico (sitio)</span>
+          <dl>
+            <dt>Construye</dt><dd>Coordinadores (Freddy, Luis)</dd>
+            <dt>Publica</dt><dd>Coordinadores</dd>
+            <dt>Horizonte</dt><dd>Semanal (viernes)</dd>
+            <dt>Cambia</dt><dd>A diario, "en línea"</dd>
+          </dl>
+        </div>
+        <div class="finding-card">
+          <span class="tag tag-mesa">Mesa de servicio</span>
+          <dl>
+            <dt>Construye</dt><dd>Coordinadores / William</dd>
+            <dt>Publica</dt><dd>Coordinadores</dd>
+            <dt>Horizonte</dt><dd>Mensual posible</dd>
+            <dt>Cambia</dt><dd>A diario</dd>
+          </dl>
+        </div>
+        <div class="finding-card">
+          <span class="tag tag-lab">Laboratorio</span>
+          <dl>
+            <dt>Construye</dt><dd>Coordinador de laboratorio</dd>
+            <dt>Publica</dt><dd>Coordinador</dd>
+            <dt>Horizonte</dt><dd>Apoyo de cobertura (sábados)</dd>
+            <dt>Cambia</dt><dd>Según novedad</dd>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section id="contexto">
+      <p class="eyebrow"><span class="idx">01</span>Contexto</p>
+      <h2>De dónde nace el módulo</h2>
+      <p>Data Center adelanta un proyecto interno para automatizar procesos de la empresa sobre una plataforma propia (GRH) que ya cubre planeación (áreas, cargos, calendarios), seguridad y roles, gestor de hojas de vida, y un gestor de actividades para el área de Soluciones. La <b>Malla de Turnos</b> es el siguiente módulo a construir sobre esa misma base.</p>
+      <p>Como los funcionarios ya están registrados en la plataforma, el módulo <b>no crea un padrón de empleados nuevo</b>: reutiliza el existente y programa turnos sobre él. Un grupo de aprendices había construido meses atrás un prototipo básico como reto de evaluación; se usó en esta sesión únicamente como disparador de conversación, <b>no como diseño aprobado</b>.</p>
+      <p>La reunión del 27 de agosto de 2026 es la <b>primera sesión oficial de levantamiento</b> del proyecto. Esta fase no compromete automatización de malla óptima ni diseño de pantallas: su único entregable es fijar el problema — requisitos, reglas, actores, excepciones y vacíos de información — antes de escribir historias de usuario.</p>
+    </section>
+
+    <section id="alcance">
+      <p class="eyebrow"><span class="idx">02</span>Objetivo y alcance</p>
+      <h2>Qué cubre esta primera versión del requerimiento</h2>
+      <p class="lead">Alcance funcional identificado a partir de lo discutido en la sesión. Se confirmará y priorizará junto con las áreas antes de convertirse en historias de usuario.</p>
+
+      <h3>Incluido en el MVP de negocio</h3>
+      <ul>
+        <li>Parametrizar turnos reutilizables por área y por empresa (código, horario, color, cruce de medianoche, break, almuerzo).</li>
+        <li>Construir la malla por área/grupo y periodo — semanal o mensual, según el frente.</li>
+        <li>Asignar turno o estado por persona y día, incluyendo doble turno excepcional y patrones de rotación.</li>
+        <li>Novedades y estados: vacaciones, incapacidad, permiso, descanso, capacitación, actividad, compensatorio, día libre.</li>
+        <li>Cambio puntual posterior a publicar: inmediato, auditado y notificado, sin generar una malla nueva.</li>
+        <li>Consulta en tiempo real de disponibilidad por persona, zona o SPT.</li>
+        <li>Vista pública de la malla del grupo y vista personal para cada funcionario.</li>
+        <li>Exportación a Excel y reporte de horas para nómina (ordinarias, extra, festivas, recargo nocturno).</li>
+        <li>Asistencia física a sede (Elemento) por semana o mes completo, con rotación y excepciones.</li>
+      </ul>
+
+      <h3>Fuera de esta fase / no comprometido</h3>
+      <ul>
+        <li>Generación automática de una "malla óptima" — rotación, vacaciones y disponibilidad calculadas por el sistema sin intervención humana.</li>
+        <li>Pantalla de indicadores de desempeño: ya existe en otra herramienta; la malla solo refleja sus efectos (ver sección 09).</li>
+        <li>Flujo de solicitud de cambio de turno por parte del empleado, con aprobación (mencionado, no pedido como necesidad actual).</li>
+        <li>Cálculo de nómina como liquidación: el módulo entrega horas, no valores a pagar.</li>
+        <li>Personal de fábrica y Mesa de segundo nivel a nivel de detalle: requieren sesión propia.</li>
+        <li>Reportería gráfica avanzada: se tratará en una sesión aparte de informes.</li>
+      </ul>
+    </section>
+
+    <section id="situacion">
+      <p class="eyebrow"><span class="idx">03</span>Situación actual</p>
+      <h2>Cómo se programan los turnos hoy, por frente</h2>
+      <p class="lead">Línea base recogida en la sesión, necesaria para parametrizar correctamente el módulo antes de diseñar pantallas.</p>
+
+      <div class="card-grid">
+        <div class="area-card cc">
+          <div class="head"><h3>Contact Center</h3><span class="tag tag-cc">Operadores · Supervisoras</span></div>
+          <p class="who">Voceros: Oscar Acuña, Ricardo Rojas</p>
+          <ul>
+            <li>Malla en Excel avanzado, con <b>12 turnos</b> (1–5 entre semana, 6–12 fin de semana/festivos), horario general de <b>6:00 a 22:00</b>. Se publica una vez al mes, con ajustes solo por incapacidad o fuerza mayor.</li>
+            <li>Las supervisoras asignan los turnos; Oscar revisa y consolida, y envía con una semana de anticipación al inicio del mes.</li>
+            <li>Colores identifican tipo de jornada (vacaciones, domingo, festivo) y campañas especiales (Data Service, Pagos de Gobierno, Línea de Soporte, apoyo a nuevos ingresos o "canguro").</li>
+            <li>Breaks y almuerzos se programan una vez al mes, repartidos para no dejar la operación descubierta.</li>
+            <li>Fórmulas automáticas para conteo de personas por turno/franja, rotación (nadie repite el mismo turno semana tras semana) y cálculo de horas, extras, festivas y recargo nocturno — todo amarrado a nómina.</li>
+            <li><b>Validación cruzada</b> contra la hoja de "novedades de nómina" que diligencian las supervisoras: marca OK o inconsistencia si las horas no coinciden.</li>
+            <li>Asistencia a la sede física <b>Elemento</b>: rota semanalmente entre todo el personal, salvo restricción de salud o necesidad de refuerzo (ver sección 09).</li>
+          </ul>
+        </div>
+
+        <div class="area-card soporte">
+          <div class="head"><h3>Soporte Técnico</h3><span class="tag tag-soporte">Sitio · Laboratorio · Mesa</span></div>
+          <p class="who">Voceros: Freddy Romero, Luis Suárez, Willian Tejada, Héctor Coronado</p>
+          <ul>
+            <li>Se programa en Excel con <b>9 turnos</b> definidos, con actualización diaria "en línea" por novedades, aunque el envío formal a los funcionarios es <b>semanal, los viernes</b>.</li>
+            <li>Bogotá se organiza por <b>regionales y SPT</b> (puntos de servicio técnico), con ~3 técnicos por regional (~40 técnicos en total); Cundinamarca es más simple, con 3 turnos fijos.</li>
+            <li>Duración variable por día: por ejemplo, turno 8 = 7.5 h + 1 h de almuerzo (lun–jue 7:00–15:30, vie hasta 16:00, sáb hasta 12:00). Base semanal de referencia: <b>42 horas</b>.</li>
+            <li>Descanso semanal el sábado para algunos turnos, compensado subiendo horas de lunes a viernes. Domingos y festivos: horario fijo 7:00–20:00 (mesa 6:00–21:00), un técnico por regional y uno por municipio.</li>
+            <li>Un técnico puede cubrir <b>dos turnos el mismo día</b> como excepción cuando no hay recurso disponible; se contabiliza como horas extra.</li>
+            <li>Patrón declarado de rotación: 15 días en turno mañana / 15 días en turno tarde, salvo funcionarios con permiso de estudio, que quedan fijos en un horario diurno.</li>
+            <li>Necesidad explícita y crítica: un <b>buscador en tiempo real</b> por técnico o por zona/SPT, para que el analista de mesa sepa quién está disponible antes de asignar un caso.</li>
+          </ul>
+        </div>
+
+        <div class="area-card mesa">
+          <div class="head"><h3>Mesa de servicio (segundo nivel)</h3><span class="tag tag-mesa">Grupo de Andrés / Ricardo Rojas</span></div>
+          <p class="who">Voceros: Ricardo Rojas, Willian Tejada · proceso aún no levantado a detalle</p>
+          <ul>
+            <li>Horario programado de forma mensual, con cambios frecuentes por incapacidades y permisos.</li>
+            <li>El equipo consulta el horario "en línea" para gestionar <b>intercambios de turno entre compañeros</b> — dinámica propia que no aparece en los otros frentes.</li>
+            <li>El horario alimenta el reporte de horas extra del área.</li>
+            <li>Dinámica muy similar a Contact Center y Soporte; se espera que la misma solución les sirva con configuración propia, una vez se levante el detalle en sesión aparte con Andrés y Ricardo.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="modelo">
+      <p class="eyebrow"><span class="idx">04</span>Modelo de datos</p>
+      <h2>Qué es una "malla" para el negocio</h2>
+      <p class="lead">Una malla no es solo Empleado → Día → Turno. Para las tres áreas incluye niveles adicionales que el módulo debe soportar sin obligar a todas a usarlos.</p>
+
+      <div class="model-diagram">
+        <div class="model-row"><span class="model-box core">Empresa</span><span class="model-arrow">→</span><span class="model-box">Área / frente operativo</span><span class="model-arrow">→</span><span class="model-box">Regional / zona / SPT *</span><span class="model-arrow">→</span><span class="model-box">Grupo de personas</span></div>
+        <div class="model-row model-indent"><span class="model-arrow">↳</span><span class="model-box core">Periodo</span><span class="model-box">semana | mes</span></div>
+        <div class="model-row model-indent"><span class="model-arrow">↳</span><span class="model-box core">Persona × día</span><span class="model-box">turno</span><span class="model-arrow">|</span><span class="model-box">estado</span><span class="model-arrow">|</span><span class="model-box">sede / modalidad *</span><span class="model-arrow">|</span><span class="model-box">campaña / tarea *</span></div>
+        <div class="model-row model-indent"><span class="model-arrow">↳</span><span class="model-box core">Cobertura</span><span class="model-box">cuántos por franja</span></div>
+        <div class="model-row model-indent"><span class="model-arrow">↳</span><span class="model-box core">Nómina</span><span class="model-box">novedades y horas</span></div>
+        <p class="model-note">* Aplica según el frente: zonas/SPT y doble turno son propios de Soporte; campañas y sede física son propias de Contact Center.</p>
+      </div>
+
+      <div class="definition-box">
+        "Malla" = programación de un grupo de empleados de un área, para un periodo, donde cada celda (persona × día) tiene un turno plantilla o un estado, y puede llevar atributos extra: zona, SPT, sede física, campaña, break, almuerzo. <span style="font-family:'IBM Plex Mono',monospace; font-style:normal; font-size:11.5px; color:var(--teal-ink); opacity:0.8;">— definición de trabajo, a validar con negocio</span>
+      </div>
+    </section>
+
+    <section id="funcionalidad">
+      <p class="eyebrow"><span class="idx">05</span>Funcionalidad</p>
+      <h2>Qué debe hacer el módulo</h2>
+      <p class="lead">Ocho bloques funcionales identificados en la sesión, cada uno con sus condiciones de éxito. La numeración es solo referencia cruzada, no un orden de construcción.</p>
+
+      <div class="feature">
+        <div class="head"><h3>F1 · Creación y publicación de mallas</h3><span class="tag tag-general">Núcleo</span></div>
+        <p>Formulario de creación con nombre, empresa, sede, área, rango de fechas, personal a incluir y turnos aplicables. El responsable se autoasigna según el usuario conectado. Antes de publicar, el sistema muestra un resumen (empleados, turnos, duración, horas estimadas) y alerta si detecta un cruce de turno.</p>
+        <p class="criteria-label">Criterios de éxito</p>
+        <ul class="check-list">
+          <li>Un coordinador crea una malla indicando empresa, sede, área, fechas, personal y turnos; el sistema le asigna automáticamente como responsable.</li>
+          <li>Al publicar, cada funcionario incluido recibe notificación de su turno por correo y por la campana de la plataforma.</li>
+          <li>El sistema reutiliza el listado de empleados existente; no permite crear un funcionario nuevo desde este módulo.</li>
+        </ul>
+        <div class="pending-note">Pendiente de decisión: si un cambio puntual sobre una malla publicada genera una nueva versión completa o actualiza únicamente ese registro (ver sección 11).</div>
+      </div>
+
+      <div class="feature">
+        <div class="head"><h3>F2 · Configuración maestra de turnos</h3></div>
+        <p>CRUD de turnos: código, nombre, tipo (mañana/tarde/noche), hora de inicio y fin, duración, descanso, marca de turno nocturno con cruce de medianoche, color y estado activo/inactivo. Un turno puede tener horas distintas según el día de la semana.</p>
+        <p class="criteria-label">Criterios de éxito</p>
+        <ul class="check-list">
+          <li>Un coordinador puede crear, editar y activar/inactivar un turno con todos sus atributos.</li>
+          <li>Un turno nocturno con cruce de medianoche calcula correctamente su duración total.</li>
+          <li>Un coordinador puede definir un patrón de rotación y aplicarlo a un grupo sin asignar turno por turno.</li>
+        </ul>
+      </div>
+
+      <div class="feature">
+        <div class="head"><h3>F3 · Visualización y consulta en tiempo real</h3></div>
+        <p>Calendario de malla con codificación por color, filtrable por sede, área y periodo (semana, quincena, mes). Ficha de detalle al seleccionar un turno, con opción de reasignar desde ahí mismo.</p>
+        <p class="criteria-label">Criterios de éxito</p>
+        <ul class="check-list">
+          <li>Cualquier usuario con permiso puede filtrar la malla y ver los turnos codificados por color.</li>
+          <li>Al buscar un técnico o una zona, el sistema muestra en tiempo real si está disponible, en qué turno y en qué zona se encuentra.</li>
+          <li>La malla puede exportarse a Excel y/o PDF conservando la información visible en pantalla.</li>
+        </ul>
+      </div>
+
+      <div class="feature">
+        <div class="head"><h3>F4 · Notificaciones</h3></div>
+        <p>Aviso al funcionario cuando se crea o modifica su turno, por correo y por notificación dentro de la plataforma. El sistema deja registro de que la notificación fue enviada.</p>
+        <p class="criteria-label">Criterios de éxito</p>
+        <ul class="check-list">
+          <li>Toda creación o modificación de turno genera notificación por correo e in-app, sin intervención manual del coordinador.</li>
+        </ul>
+        <div class="pending-note">Pendiente de decisión: si el funcionario debe aceptar el turno o si la notificación es solo informativa (ver sección 11).</div>
+      </div>
+
+      <div class="feature">
+        <div class="head"><h3>F5 · Historial y auditoría</h3></div>
+        <p>Registro de cada modificación: fecha, hora, usuario, funcionario afectado, valor anterior, valor nuevo y motivo. Solo el grupo de coordinadores puede modificar una malla publicada.</p>
+        <p class="criteria-label">Criterios de éxito</p>
+        <ul class="check-list">
+          <li>Cada cambio queda registrado de forma inmutable, con trazabilidad de quién lo hizo dentro del grupo de coordinadores.</li>
+          <li>El historial es consultable, filtrable por tipo de cambio o por funcionario, y exportable.</li>
+        </ul>
+      </div>
+
+      <div class="feature">
+        <div class="head"><h3>F6 · Reportería</h3></div>
+        <p>Reportes operativos (conflictos, turnos sin asignar) y reporte de nómina: horas ordinarias, extra, festivas diurnas/nocturnas y recargo nocturno por persona y periodo, cruzado contra las novedades reportadas.</p>
+        <p class="criteria-label">Criterios de éxito</p>
+        <ul class="check-list">
+          <li>El sistema genera un reporte de horas listo para conciliar con nómina, respetando los cortes configurados.</li>
+          <li>El sistema identifica y lista funcionarios sin turno asignado en un rango de fechas.</li>
+        </ul>
+      </div>
+
+      <div class="feature">
+        <div class="head"><h3>F7 · Estados y novedades del funcionario</h3></div>
+        <p>Estados sobre un turno o día: descanso, incapacidad, capacitación, permiso, vacaciones, compensatorio, compensatorio no remunerado, reemplazo, actividad (ocupado en tarea que no debe recibir casos aunque no aparezca en la malla), entre otros.</p>
+        <p class="criteria-label">Criterios de éxito</p>
+        <ul class="check-list">
+          <li>Cada estado indica si cuenta o no para el cálculo de horas, extras y recargos.</li>
+          <li>Un funcionario en estado "actividad" no queda visible como disponible para asignación de casos.</li>
+        </ul>
+      </div>
+
+      <div class="feature">
+        <div class="head"><h3>F8 · Roles y visibilidad</h3></div>
+        <p>Rol <b>coordinador</b>: acceso completo — crear, publicar, modificar, ver historial, conflictos y reportería. Rol <b>funcionario</b>: vista propia de sus turnos, sin acceso a conflictos, historial ni panel administrativo.</p>
+        <p class="criteria-label">Criterios de éxito</p>
+        <ul class="check-list">
+          <li>Un funcionario que ingresa al módulo solo ve sus propios turnos, en lista o calendario.</li>
+          <li>Un coordinador ve la malla completa de su área, con historial, conflictos y reportería.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="reglas">
+      <p class="eyebrow"><span class="idx">06</span>Reglas de negocio</p>
+      <h2>Qué bloquea, qué solo advierte</h2>
+      <p class="lead">En la reunión no se cerró el criterio general. Esta es la propuesta a validar con cada frente antes de convertirla en lógica del sistema.</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Regla</th><th>Tratamiento propuesto</th><th>Frente</th></tr></thead>
+          <tbody>
+            <tr><td>Un empleado puede tener dos turnos el mismo día</td><td><span class="pill pill-warn">Permitir + marcar extra</span></td><td>Sitio</td></tr>
+            <tr><td>Solape horario real (misma hora, dos turnos)</td><td><span class="pill pill-block">Bloquear</span></td><td>Todos</td></tr>
+            <tr><td>Semana de referencia de 42 h no cierra</td><td><span class="pill pill-warn">Advertir</span></td><td>Sitio</td></tr>
+            <tr><td>Cobertura mínima en domingo/festivo</td><td><span class="pill pill-warn">Advertir si falta</span></td><td>Sitio</td></tr>
+            <tr><td>Persona en descanso, incapacidad, permiso o vacaciones</td><td><span class="pill pill-block">Bloquear asignación de casos</span></td><td>Mesa</td></tr>
+            <tr><td>Persona en estado "actividad"</td><td><span class="pill pill-block">Bloquear asignación de casos</span></td><td>Mesa</td></tr>
+            <tr><td>Breaks del mismo tramo entre operadores</td><td><span class="pill pill-warn">Advertir solape</span></td><td>Contact Center</td></tr>
+            <tr><td>Almuerzos que dejan la operación sin cobertura</td><td><span class="pill pill-warn">Advertir</span></td><td>CC / Mesa</td></tr>
+            <tr><td>Repetir el mismo turno semana tras semana</td><td><span class="pill pill-warn">Advertir (rotación)</span></td><td>Contact Center</td></tr>
+            <tr><td>Turno incompatible con restricción de estudio o salud</td><td><span class="pill pill-block">Bloquear (a validar)</span></td><td>Sitio / CC</td></tr>
+            <tr><td>Edición de malla publicada por rol no autorizado</td><td><span class="pill pill-block">Bloquear</span></td><td>Todos</td></tr>
+            <tr><td>Celda con estado de novedad</td><td><span class="pill pill-sys">Deja de sumar horas/extras/recargos</span></td><td>Contact Center</td></tr>
+            <tr><td>Un empleado aparece en más de una malla del mismo periodo</td><td><span class="pill pill-warn">Permitir + advertir doble programación</span></td><td>Sitio / Lab</td></tr>
+            <tr><td>Compensatorio por 3 domingos trabajados en el mes</td><td><span class="pill pill-warn">Advertir / sugerir</span></td><td>Contact Center</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pending-note" style="margin-top:14px;">Pregunta a cerrar en validación: ¿publicar con advertencias es válido en todos los casos, o hay bloqueos mínimos innegociables (solape, celda vacía, cero cobertura en un SPT)?</div>
+    </section>
+
+    <section id="roles">
+      <p class="eyebrow"><span class="idx">07</span>Roles y permisos</p>
+      <h2>Quién hace qué en el módulo</h2>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Rol</th><th>Qué hace hoy</th><th>Qué debería poder hacer</th></tr></thead>
+          <tbody>
+            <tr><td>Supervisora Contact Center</td><td>Crea y ajusta celdas; registra novedades diarias</td><td>Crear/editar borrador; cambios puntuales; registrar novedad</td></tr>
+            <tr><td>Coordinador Contact Center</td><td>Revisa, aprueba, envía, cruza nómina</td><td>Revisar / aprobar / publicar; ver conflictos; generar reporte de nómina</td></tr>
+            <tr><td>Coordinador soporte / mesa / lab</td><td>Construye, cambia en línea, cubre zonas</td><td>Crear / editar / publicar; cambio inmediato; buscar disponibilidad</td></tr>
+            <tr><td>Analista de mesa</td><td>Consulta quién está en turno, zona o SPT</td><td><b>Solo consulta en tiempo real</b>, sin editar</td></tr>
+            <tr><td>Director / analista SPT</td><td>Recibe Excel de recursos por fuera de la plataforma</td><td>Consultar o recibir exportación de cobertura</td></tr>
+            <tr><td>Operador / técnico</td><td>Recibe la malla del grupo</td><td>Ver malla del grupo y la propia; recibir notificación de cambio</td></tr>
+            <tr><td>Talento humano / nómina</td><td>Recibe horas y novedades</td><td>Recibir / exportar reporte de horas; no opera la malla</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="role-note">Confirmado en la sesión: el empleado no acepta el cambio de turno; queda registro y notificación informativa. Tampoco es necesario versionar la malla completa — el cambio es puntual, con historial de valor anterior, valor nuevo, quién, cuándo y motivo.</p>
+    </section>
+
+    <section id="nfr">
+      <p class="eyebrow"><span class="idx">08</span>Requisitos no funcionales</p>
+      <h2>Condiciones que sostienen la operación diaria</h2>
+      <p class="lead">No son "features" que se vean en pantalla, pero sin ellas el módulo no reemplaza al Excel actual.</p>
+      <div class="nfr-grid">
+        <div class="nfr-card"><h3>Multi-tenant</h3><p>Toda malla, turno y reporte va por empresa. Los catálogos de turno se parametrizan por empresa y por área, nunca de forma única para toda la plataforma.</p></div>
+        <div class="nfr-card"><h3>Tiempo real</h3><p>La consulta de "quién está en turno ahora" debe reflejar un cambio en segundos, no en el siguiente envío semanal — crítico para la mesa que despacha casos en vivo.</p></div>
+        <div class="nfr-card"><h3>Auditoría</h3><p>Los cambios de celda son inmutables en el historial: quién, cuándo, valor anterior, valor nuevo y motivo. Nunca se borra, solo se acumula.</p></div>
+        <div class="nfr-card"><h3>Usabilidad</h3><p>La grilla debe ser comparable a Excel en color, filtros y conteos en vivo. El Excel actual es, hoy, el estándar de usabilidad a igualar.</p></div>
+        <div class="nfr-card"><h3>Seguridad por rol y área</h3><p>Autorización por rol y por frente operativo. El analista de mesa tiene solo lectura; el técnico ve la lectura de su propio grupo.</p></div>
+        <div class="nfr-card"><h3>Exportación</h3><p>Excel como canal actual hacia directores, analistas de SPT y nómina, ya que hoy ese es el formato que reciben fuera de la plataforma.</p></div>
+        <div class="nfr-card"><h3>Disponibilidad amplia</h3><p>Horario operativo extendido (sitio ~7:00–20:00, mesa 6:00–21:00, CC 6:00–22:00). La consulta de cobertura no puede "esperar al viernes".</p></div>
+        <div class="nfr-card"><h3>Accesibilidad de color</h3><p>El color es semántica operativa (turno, estado, festivo). Debe existir siempre un código o leyenda textual, nunca solo color.</p></div>
+      </div>
+    </section>
+
+    <section id="diferencias">
+      <p class="eyebrow"><span class="idx">09</span>Diferencias por área</p>
+      <h2>Lo que el módulo debe soportar sin unificar de más</h2>
+      <p class="lead">Cada frente maneja campos y reglas distintas hoy en su Excel. Antes de parametrizar el módulo hay que decidir qué campos son obligatorios en general y cuáles son específicos por área.</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Aspecto</th><th>Soporte Técnico</th><th>Mesa de Servicio</th><th>Contact Center</th></tr></thead>
+          <tbody>
+            <tr><td>Nº de turnos activos</td><td class="num">9</td><td class="num">Sin definir aún</td><td class="num">12</td></tr>
+            <tr><td>Franja horaria general</td><td>7:00–20:00 (sitio) / 6:00–21:00 (mesa)</td><td>Horario mensual, ajustable a diario</td><td>6:00–22:00</td></tr>
+            <tr><td>Periodicidad de publicación</td><td>Semanal (viernes), ajustes diarios "en línea"</td><td>Mensual, ajustes por novedad</td><td>Mensual</td></tr>
+            <tr><td>Base de horas semanales</td><td>42 h</td><td>Por definir</td><td>Ligada a nómina, con extras/festivos</td></tr>
+            <tr><td>¿Doble turno el mismo día?</td><td>Sí, excepcional, como horas extra</td><td>Por definir</td><td>No mencionado</td></tr>
+            <tr><td>Compartir malla con terceros sin acceso a la plataforma</td><td>Sí — directores y analistas de SPT (a resolver cómo)</td><td>No mencionado</td><td>No mencionado</td></tr>
+            <tr><td>Visibilidad de la malla</td><td>Pública para el grupo</td><td>Pública para el grupo</td><td>General, no individual</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:16px;">Para Contact Center en particular: la asistencia a la sede <b>Elemento</b> rota semanalmente entre todo el personal, salvo que existan restricciones de salud o que Ricardo Rojas identifique — a partir de indicadores de desempeño gestionados en otra herramienta — que un agente necesita acompañamiento y deba quedar fijo en sede 1 o 2 meses. El módulo no gestiona el indicador, pero sí debe permitir reflejar y sostener esa excepción en la malla mientras dure.</p>
+    </section>
+
+    <section id="riesgos">
+      <p class="eyebrow"><span class="idx">10</span>Riesgos de esta fase</p>
+      <h2>Lo que puede desviar el proyecto si no se gestiona a tiempo</h2>
+      <ul class="risk-list">
+        <li><span class="risk-num">1</span><div><b>Unificar en exceso Contact Center y Soporte</b><p>Forzar las mismas pantallas rígidas para ambos frentes repite el problema del Excel único. Mitigación: núcleo común (celda, turno, estado, historial) más parametría por frente.</p></div></li>
+        <li><span class="risk-num">2</span><div><b>Prometer generación automática de rotación óptima</b><p>El Excel de Oscar ya es un motor semimanual; automatizarlo por completo es un proyecto aparte, no parte de este alcance.</p></div></li>
+        <li><span class="risk-num">3</span><div><b>Confundir el módulo con liquidación de nómina</b><p>El alcance confirmado es entregar horas, no calcular valores a pagar.</p></div></li>
+        <li><span class="risk-num">4</span><div><b>Diseñar sin Mesa de segundo nivel ni Fábrica</b><p>Quedaron fuera de esta reunión; un diseño prematuro los deja sin representar en el núcleo del sistema.</p></div></li>
+        <li><span class="risk-num">5</span><div><b>Subestimar el alcance de "tiempo real"</b><p>La necesidad de Mesa puede empujar hacia un tablero de despacho operativo, más exigente que una vista de Excel mensual. Hay que acotar la experiencia con cuidado.</p></div></li>
+        <li><span class="risk-num">6</span><div><b>Integración con novedades de Talento Humano</b><p>Hoy son dos Excel que se cruzan manualmente. Integrarlos de verdad implica coordinar con el dueño de ese formato.</p></div></li>
+      </ul>
+    </section>
+
+    <section id="pendientes">
+      <p class="eyebrow"><span class="idx">11</span>Puntos abiertos</p>
+      <h2>Lo que falta cerrar antes de diseñar</h2>
+
+      <div class="oq-group">
+        <div class="oq-group-title"><span class="tag" style="background:var(--danger-bg); color:var(--danger-ink);">Bloquea diseño</span></div>
+        <ul class="oq-list blocker">
+          <li><span class="lbl">Mesa de segundo nivel</span>Proceso, actores, intercambio de turnos y horizonte de planeación — pendiente sesión propia con Andrés y Ricardo.</li>
+          <li><span class="lbl">Excel reales</span>Recibir los Excel prometidos (Contact Center de septiembre, y el de Soporte) para trabajar sobre campos reales, no sobre lo dicho de memoria en la reunión.</li>
+          <li><span class="lbl">Catálogo cerrado de turnos</span>Lista definitiva de turnos de Soporte (1–9) y Contact Center (1–12), con horarios exactos por día.</li>
+          <li><span class="lbl">Catálogo de estados</span>Lista cerrada de estados/letras y si cada uno suma horas o hace a la persona no asignable.</li>
+          <li><span class="lbl">Alcance de la malla</span>¿Una malla es siempre de una sola área, o puede mezclar mesa, laboratorio y sitio en la misma grilla?</li>
+          <li><span class="lbl">Bloquear vs advertir</span>Validar formalmente la tabla de reglas de la sección 06 con cada frente.</li>
+        </ul>
+      </div>
+
+      <div class="oq-group">
+        <div class="oq-group-title"><span class="tag" style="background:var(--warn-bg); color:var(--warn-ink);">Importante — sesión de informes</span></div>
+        <ul class="oq-list">
+          <li><span class="lbl">Versionamiento</span>Cuando se corrige un turno puntual sobre una malla publicada, ¿se genera una nueva versión completa o el cambio se refleja solo en ese registro? Planteado por Jair, sin resolución en la reunión.</li>
+          <li><span class="lbl">Aceptación del turno</span>¿El funcionario debe poder aceptar, ignorar o reportar un cambio de turno, o la notificación es solo informativa? Willian se inclinó por lo segundo; falta confirmarlo como regla general.</li>
+          <li><span class="lbl">Layout de nómina</span>Formato exacto del archivo que recibe Talento Humano y si los cortes de nómina varían por empresa.</li>
+          <li><span class="lbl">Compartir con terceros</span>Soporte necesita entregar la malla a directores y analistas de SPT sin acceso a la plataforma — falta definir si es exportación, enlace de solo lectura u otro mecanismo.</li>
+          <li><span class="lbl">Reportería detallada</span>Ricardo Rojas propuso una sesión aparte con Contact Center y Mesa de Servicio para precisar formato y contenido de los reportes internos.</li>
+        </ul>
+      </div>
+
+      <div class="oq-group">
+        <div class="oq-group-title"><span class="tag tag-p2">Posterior</span></div>
+        <ul class="oq-list" style="border-left-color:var(--ink-faint);">
+          <li><span class="lbl" style="color:var(--ink-faint);">Personal de fábrica</span>Mencionado por Jair como un tipo de turno adicional a tratar en conversación específica con Héctor Coronado.</li>
+          <li><span class="lbl" style="color:var(--ink-faint);">Solicitud de intercambio</span>Flujo de intercambio de turno entre compañeros, hoy informal en Mesa de segundo nivel.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="insumos">
+      <p class="eyebrow"><span class="idx">12</span>Insumos</p>
+      <h2>Material comprometido para parametrizar el módulo</h2>
+      <ul>
+        <li>Oscar Acuña y Ricardo Rojas comparten el Excel de Contact Center, incluyendo la <b>malla de septiembre de 2026</b> ya construida, como insumo real de parametrización.</li>
+        <li>Jair solicitó a Soporte Técnico y Mesa de Servicio compartir sus Excel de trabajo, para identificar de primera mano qué campos maneja cada uno y cuáles deberían ser obligatorios en el módulo.</li>
+        <li>Freddy Romero confirmó que hoy comparten los horarios con directores y analistas de SPT sin acceso a la plataforma; ese flujo debe tenerse en cuenta al diseñar la exportación.</li>
+      </ul>
+    </section>
+
+    <section id="pasos">
+      <p class="eyebrow"><span class="idx">13</span>Próximos pasos</p>
+      <h2>Camino hacia el plan de trabajo</h2>
+      <ol class="timeline">
+        <li><span class="t-lbl">Ahora</span><span class="t-body">Consolidar esta información y construir <b>historias de usuario</b> a partir de lo levantado en la sesión.</span></li>
+        <li><span class="t-lbl">Antes de la próxima sesión</span><span class="t-body">Con las historias como base, el equipo — Tatiana Valcárcel (documentación), Héctor Coronado (líder técnico) y Angie Acosta (diseño) — prepara los primeros <b>mockups</b> como propuesta, sujetos a corrección de los usuarios de negocio.</span></li>
+        <li><span class="t-lbl">Semana del 7 al 11 de sept · 2026</span><span class="t-body">Segunda sesión de validación: se presentan historias de usuario y mockups; los voceros de cada área confirman, ajustan o descartan funcionalidad.</span></li>
+        <li><span class="t-lbl">Cadencia acordada</span><span class="t-body">Reuniones de seguimiento <b>cada 15 días, los jueves</b> (con posibilidad de pasar a cada 8 días si el ritmo del proyecto lo requiere), siguiendo la misma dinámica usada en el módulo de hojas de vida.</span></li>
+      </ol>
+      <p style="margin-top:18px; color:var(--ink-muted); font-size:14.5px;">Recomendación de frente piloto: núcleo común de la malla + <b>Contact Center</b> como piloto de parametría y nómina, junto con un <b>spike de consulta en vivo</b> para Mesa, sin pretender replicar el Excel de Oscar al 100 % en el primer incremento.</p>
+    </section>
+
+    <section id="glosario">
+      <p class="eyebrow"><span class="idx">14</span>Glosario</p>
+      <h2>Vocabulario de la operación</h2>
+      <dl class="glossary-grid">
+        <div><dt>Malla</dt><dd>Programación del grupo para un periodo.</dd></div>
+        <div><dt>Turno</dt><dd>Plantilla reutilizable: código, horario y color.</dd></div>
+        <div><dt>Estado / novedad</dt><dd>Celda que no es horario operativo (descanso, incapacidad, etc.).</dd></div>
+        <div><dt>SPT</dt><dd>Punto o sede técnica donde se cubre el recurso.</dd></div>
+        <div><dt>Regional / zona</dt><dd>Agrupación geográfica (Bogotá norte, Cundinamarca...).</dd></div>
+        <div><dt>Elemento</dt><dd>Sede física de asistencia de Contact Center.</dd></div>
+        <div><dt>Canguro</dt><dd>Acompañamiento a personal nuevo.</dd></div>
+        <div><dt>Actividad</dt><dd>Ocupado en labor no despachable (ej. mantenimiento).</dd></div>
+        <div><dt>Publicar</dt><dd>Enviar y hacer visible al grupo; en Soporte no significa inmutable.</dd></div>
+        <div><dt>Corte de nómina</dt><dd>Rango de fechas que agrupa horas a reportar.</dd></div>
+      </dl>
+    </section>
+
+    <footer>
+      <div class="shift-strip thin" style="margin-bottom:18px; max-width:240px;">
+        <div class="bar"><span class="seg-noche" style="width:25%"></span><span class="seg-manana" style="width:33.3%"></span><span class="seg-tarde" style="width:33.3%"></span><span class="seg-noche" style="width:8.4%"></span></div>
+      </div>
+      <p>Documento consolidado a partir de: (1) el levantamiento de requisitos v0.1 elaborado por Jair Uribe, y (2) el resumen funcional "Alcance y objetivo — Malla de Turnos" derivado de la misma reunión. Fase 1 — elicitación. Borrador para validación de negocio, no es diseño ni alcance cerrado. Próxima sesión: semana del 7–11 de septiembre de 2026.</p>
+    </footer>
+  </main>
+</div>
+
+<aside class="theme-dock">
+  <div class="theme-panel" id="theme-panel" role="dialog" aria-label="Selector de tema" aria-hidden="true">
+    <p class="theme-dock-label">Apariencia</p>
+    <div class="theme-modes" role="group" aria-label="Modo de color">
+      <button type="button" class="theme-mode" data-mode="light" aria-pressed="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 3v1.5M12 19.5V21M4.93 4.93l1.06 1.06M18.01 18.01l1.06 1.06M3 12h1.5M19.5 12H21M4.93 19.07l1.06-1.06M18.01 5.99l1.06-1.06"/>
+        </svg>
+        <span>Claro</span>
+      </button>
+      <button type="button" class="theme-mode" data-mode="dark" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.5 14.3A8.5 8.5 0 1 1 9.7 3.5 7 7 0 0 0 20.5 14.3z"/>
+        </svg>
+        <span>Oscuro</span>
+      </button>
+    </div>
+    <p class="theme-dock-label">Color</p>
+    <div class="theme-swatches" role="group" aria-label="Color de acento">
+      <button type="button" class="theme-swatch" data-accent="navy" aria-label="Azul marino" title="Azul marino" aria-pressed="true" style="--swatch-color:#1E3A5F"></button>
+      <button type="button" class="theme-swatch" data-accent="azure" aria-label="Azul" title="Azul" aria-pressed="false" style="--swatch-color:#2563EB"></button>
+      <button type="button" class="theme-swatch" data-accent="teal" aria-label="Turquesa" title="Turquesa" aria-pressed="false" style="--swatch-color:#0D9488"></button>
+      <button type="button" class="theme-swatch" data-accent="violet" aria-label="Violeta" title="Violeta" aria-pressed="false" style="--swatch-color:#7C3AED"></button>
+      <button type="button" class="theme-swatch" data-accent="emerald" aria-label="Esmeralda" title="Esmeralda" aria-pressed="false" style="--swatch-color:#059669"></button>
+      <button type="button" class="theme-swatch" data-accent="amber" aria-label="Ámbar" title="Ámbar" aria-pressed="false" style="--swatch-color:#D97706"></button>
+      <button type="button" class="theme-swatch" data-accent="rose" aria-label="Rosa" title="Rosa" aria-pressed="false" style="--swatch-color:#E11D48"></button>
+      <button type="button" class="theme-swatch" data-accent="slate" aria-label="Pizarra" title="Pizarra" aria-pressed="false" style="--swatch-color:#475569"></button>
+    </div>
+  </div>
+  <button type="button" class="theme-toggle" aria-expanded="false" aria-controls="theme-panel" aria-label="Abrir selector de tema">
+    <svg class="icon-palette" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 3a9 9 0 1 0 .4 18c.7 0 1.1-.6 1.1-1.2 0-.3-.1-.6-.3-.9a1.2 1.2 0 0 1 .9-2h1.4A4.5 4.5 0 0 0 21 12 9 9 0 0 0 12 3z"/>
+      <circle cx="7.5" cy="10.5" r="1.15" fill="currentColor" stroke="none"/>
+      <circle cx="10.2" cy="7.2" r="1.15" fill="currentColor" stroke="none"/>
+      <circle cx="14.3" cy="7.4" r="1.15" fill="currentColor" stroke="none"/>
+      <circle cx="8.2" cy="14.2" r="1.15" fill="currentColor" stroke="none"/>
+    </svg>
+    <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+      <path d="M6 6l12 12M18 6L6 18"/>
+    </svg>
+  </button>
+</aside>
+
+<script>
+(function(){
+  var root = document.documentElement;
+  var storageKey = "malla-theme";
+
+  function saveTheme(mode, accent){
+    localStorage.setItem(storageKey, JSON.stringify({ mode: mode, accent: accent }));
+  }
+
+  function current(){
+    return {
+      mode: root.getAttribute("data-mode") || "light",
+      accent: root.getAttribute("data-accent") || "navy"
+    };
+  }
+
+  function apply(mode, accent){
+    root.setAttribute("data-mode", mode);
+    root.setAttribute("data-accent", accent);
+    saveTheme(mode, accent);
+    document.querySelectorAll(".theme-mode").forEach(function(btn){
+      btn.setAttribute("aria-pressed", String(btn.getAttribute("data-mode") === mode));
+    });
+    document.querySelectorAll(".theme-swatch").forEach(function(btn){
+      btn.setAttribute("aria-pressed", String(btn.getAttribute("data-accent") === accent));
+    });
+  }
+
+  var initial = current();
+  apply(initial.mode, initial.accent);
+
+  document.querySelectorAll(".theme-mode").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      apply(btn.getAttribute("data-mode"), current().accent);
+    });
+  });
+  document.querySelectorAll(".theme-swatch").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      apply(current().mode, btn.getAttribute("data-accent"));
+    });
+  });
+
+  var dock = document.querySelector(".theme-dock");
+  var toggle = document.querySelector(".theme-toggle");
+  var panel = document.getElementById("theme-panel");
+  panel.inert = true;
+
+  function setOpen(open){
+    dock.classList.toggle("is-open", open);
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.setAttribute("aria-label", open ? "Cerrar selector de tema" : "Abrir selector de tema");
+    panel.setAttribute("aria-hidden", String(!open));
+    panel.inert = !open;
+  }
+
+  toggle.addEventListener("click", function(e){
+    e.stopPropagation();
+    setOpen(!dock.classList.contains("is-open"));
+  });
+  document.addEventListener("click", function(e){
+    if (dock.classList.contains("is-open") && !dock.contains(e.target)) setOpen(false);
+  });
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape" && dock.classList.contains("is-open")){
+      setOpen(false);
+      toggle.focus();
+    }
+  });
+})();
+</script>
+</body>
+</html>

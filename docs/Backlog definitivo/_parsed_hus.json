@@ -1,0 +1,3704 @@
+[
+  {
+    "id": "MT-EP00-HU01",
+    "title": "Completar módulo y submódulos de Malla de Turnos en la plataforma",
+    "epic_file": "EP-00-Integracion-GRH.md",
+    "como": "Super-administrador de la plataforma GRH",
+    "quiero": "completar el módulo Malla de Turnos (ya existente en catálogo) con sus submódulos, rutas de menú y asociación a planes",
+    "para": "que las empresas con el módulo en su plan vean las secciones en el menú sin crear un módulo duplicado",
+    "cubren": [
+      "Completar submódulos del módulo existente (Parametrización, Construcción, Consulta, Mi programación, Reportes)",
+      "Asociar el módulo a planes de servicio",
+      "Habilitar visibilidad en menú cuando el plan activo de la empresa lo incluye y hay permiso LEER",
+      "Parametrizar frentes, turnos o mallas",
+      "Crear un segundo módulo con otro nombre o id"
+    ],
+    "reglas": [
+      "El módulo de plataforma se identifica en el catálogo existente; no se crea un módulo paralelo.",
+      "Los submódulos son secciones de menú con permisos CREAR/LEER/ACTUALIZAR/ELIMINAR.",
+      "La empresa solo ve el módulo si su plan activo lo incluye.",
+      "Los nombres de frentes operativos no son ítems del menú de plataforma."
+    ],
+    "cas": [
+      [
+        "Completar sin duplicar",
+        "existe el módulo Malla de Turnos en el catálogo de plataforma",
+        "el Super-administrador registra o completa los submódulos y los asocia a un plan",
+        "no se crea un segundo módulo y el plan queda asociado al módulo existente"
+      ],
+      [
+        "Visibilidad por plan",
+        "una empresa tiene plan activo con el módulo y un usuario con LEER en un submódulo",
+        "el usuario inicia sesión",
+        "ve las secciones habilitadas en el menú lateral"
+      ],
+      [
+        "Sin plan",
+        "una empresa no tiene el módulo en su plan",
+        "un usuario de esa empresa inicia sesión",
+        "no ve Malla de Turnos en el menú"
+      ],
+      [
+        "Permisos",
+        "solo el Super-administrador puede modificar el catálogo de módulos de plataforma",
+        "un administrador de empresa intenta crear un módulo de plataforma",
+        "la acción no está disponible"
+      ]
+    ],
+    "deps": "- HUs: Ninguna previa de Malla\n- Microservicios / GRH: company-admin (módulos, submódulos, plan_modulos); auth (permission_submodules); frontend menú"
+  },
+  {
+    "id": "MT-EP00-HU02",
+    "title": "Configurar permisos por sección de menú",
+    "epic_file": "EP-00-Integracion-GRH.md",
+    "como": "Administrador de empresa",
+    "quiero": "asignar a roles de mi empresa los permisos CREAR, LEER, ACTUALIZAR y ELIMINAR sobre las secciones de Malla de Turnos",
+    "para": "controlar quién parametriza, construye, publica, consulta o reporta sin inventar un sistema de seguridad paralelo",
+    "cubren": [
+      "Asignación de permisos por rol y submódulo usando el modelo de seguridad GRH",
+      "Validación de acceso en cada sección",
+      "Alcance por frente operativo (ver HU03)",
+      "Roles hardcodeados tipo Contact Center"
+    ],
+    "reglas": [
+      "Los únicos permisos de plataforma son CREAR, LEER, ACTUALIZAR y ELIMINAR por submódulo.",
+      "Los roles operativos (coordinador, supervisora, analista, etc.) son roles de la empresa, no enums del producto.",
+      "Sin LEER en la sección, el usuario no ve la opción de menú ni puede invocar la API correspondiente."
+    ],
+    "cas": [
+      [
+        "Asignar permisos",
+        "existe un rol de empresa y submódulos de Malla",
+        "el administrador asigna LEER y ACTUALIZAR en Construcción",
+        "los usuarios con ese rol pueden abrir Construcción y modificar según ACTUALIZAR"
+      ],
+      [
+        "Denegación",
+        "un usuario no tiene LEER en Reportes",
+        "intenta acceder a Reportes",
+        "el sistema niega el acceso"
+      ],
+      [
+        "Multiempresa",
+        "dos empresas tienen roles con el mismo nombre",
+        "se consultan permisos",
+        "cada empresa solo ve y administra sus propios roles"
+      ],
+      [
+        "Sin inventar permisos",
+        "se configura seguridad",
+        "se listan permisos disponibles",
+        "solo aparecen CREAR/LEER/ACTUALIZAR/ELIMINAR (no permisos inventados de frente)"
+      ]
+    ],
+    "deps": "- HUs: MT-EP00-HU01\n- Microservicios / GRH: auth (roles, permission_submodules); company-admin submódulos"
+  },
+  {
+    "id": "MT-EP00-HU03",
+    "title": "Asignar alcance de frentes operativos a usuarios o roles",
+    "epic_file": "EP-00-Integracion-GRH.md",
+    "como": "Administrador de empresa o usuario con permiso de parametrización",
+    "quiero": "definir qué frentes operativos puede ver u operar cada usuario o rol dentro de Malla",
+    "para": "aislar operaciones por frente sin modificar el modelo RBAC de plataforma",
+    "cubren": [
+      "Matriz usuario/rol ↔ frentes autorizados",
+      "Filtrado de selectores y mallas según alcance",
+      "Permisos CREAR/LEER de menú (HU02)",
+      "Crear frentes (HU09)"
+    ],
+    "reglas": [
+      "El alcance de frente es configuración del dominio Malla, no un permiso SM_* nuevo.",
+      "Un usuario solo opera frentes de su empresa y dentro de su alcance.",
+      "Si no tiene alcance asignado, no ve frentes (fail-closed) salvo rol con alcance total configurado explícitamente."
+    ],
+    "cas": [
+      [
+        "Asignación",
+        "existen frentes A y B en la empresa",
+        "se autoriza al usuario solo el frente A",
+        "en selectores y listados solo aparece A"
+      ],
+      [
+        "Intento fuera de alcance",
+        "el usuario solo tiene frente A",
+        "intenta abrir una malla del frente B por identificador",
+        "el sistema rechaza por autorización"
+      ],
+      [
+        "Tenant",
+        "el frente pertenece a otra empresa",
+        "se intenta asignar alcance",
+        "no aparece ni se puede asignar"
+      ],
+      [
+        "Auditoría",
+        "se modifica el alcance de un usuario",
+        "se guarda el cambio",
+        "queda registro de quién cambió qué y cuándo"
+      ]
+    ],
+    "deps": "- HUs: MT-EP00-HU02, MT-EP01-HU09\n- Microservicios / GRH: Malla (nuevo); auth solo para identidad del usuario\n\n---"
+  },
+  {
+    "id": "MT-EP00-HU04",
+    "title": "Aislar información por empresa",
+    "epic_file": "EP-00-Integracion-GRH.md",
+    "como": "Administrador de empresa / Usuario de la empresa con permiso de construcción de malla (coordinador/supervisora según rol)",
+    "quiero": "que toda la información de Malla de Turnos pertenezca únicamente a mi empresa",
+    "para": "impedir fugas de datos entre tenants",
+    "cubren": [
+      "Aislamiento de catálogos, mallas, reglas, solicitudes, reportes e historial",
+      "companyId desde contexto autenticado",
+      "Lógica de negocio de turnos"
+    ],
+    "reglas": [
+      "El identificador de empresa proviene del contexto autenticado; no se confía en el valor enviado por el cliente como fuente de verdad.",
+      "Todas las consultas y escrituras están filtradas por empresa.",
+      "Catálogos, mallas, reglas, solicitudes de intercambio y exportaciones son tenant-scoped."
+    ],
+    "cas": [
+      [
+        "Lectura aislada",
+        "la empresa A tiene frentes y mallas",
+        "un usuario de la empresa B lista frentes o mallas",
+        "no ve datos de A"
+      ],
+      [
+        "Escritura aislada",
+        "un usuario autenticado en empresa A",
+        "intenta crear un recurso indicando empresa B en el cuerpo",
+        "el sistema ignora ese valor y persiste solo bajo A, o rechaza la petición"
+      ],
+      [
+        "Empleados",
+        "se seleccionan funcionarios para una malla",
+        "se listan candidatos",
+        "solo aparecen empleados de la misma empresa"
+      ],
+      [
+        "Reportes",
+        "se exporta un reporte",
+        "se genera el archivo",
+        "solo incluye datos de la empresa del usuario"
+      ]
+    ],
+    "deps": "- HUs: MT-EP00-HU01\n- Microservicios / GRH: Todos los MS involucrados; JWT companyId"
+  },
+  {
+    "id": "MT-EP00-HU05",
+    "title": "Reutilizar empleados, áreas, cargos y calendario de festivos de GRH",
+    "epic_file": "EP-00-Integracion-GRH.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla (coordinador/supervisora según rol)",
+    "quiero": "usar los funcionarios, áreas, cargos y festivos ya existentes en GRH al armar mallas",
+    "para": "no duplicar padrones ni calendarios",
+    "cubren": [
+      "Consumo de empleados, áreas, cargos y festivos del calendario de empresa",
+      "Referencia de solo lectura a jornada contractual cuando se consulte",
+      "Crear empleados en Malla",
+      "Inventar sedes GRH (no existen): sitios = catálogo Malla HU18",
+      "Escribir jornada contractual desde Malla"
+    ],
+    "reglas": [
+      "Malla no mantiene un padrón paralelo de empleados.",
+      "Áreas y cargos se leen de parametrización GRH.",
+      "Festivos se leen del calendario de empresa.",
+      "Sitios de asistencia son catálogo propio de Malla."
+    ],
+    "cas": [
+      [
+        "Empleados",
+        "existen empleados activos en la empresa",
+        "el coordinador arma el grupo de la malla",
+        "selecciona desde el padrón GRH de su empresa"
+      ],
+      [
+        "Áreas y cargos",
+        "se filtra por área o cargo",
+        "se aplican filtros",
+        "los valores vienen de maestros GRH"
+      ],
+      [
+        "Festivos",
+        "el calendario de empresa tiene un festivo",
+        "se consulta el día en malla",
+        "el sistema reconoce el festivo sin catálogo paralelo de festivos en Malla"
+      ],
+      [
+        "Sin sedes GRH",
+        "se necesita un sitio de asistencia",
+        "el usuario busca sedes en GRH",
+        "usa el catálogo de sitios de Malla (HU18), no un maestro inexistente de sedes"
+      ]
+    ],
+    "deps": "- HUs: MT-EP00-HU04, MT-EP00-HU08, MT-EP01-HU18, MT-EP01-HU20\n- Microservicios / GRH: employee; parametrization (areas, positions, company-calendars); Malla para sitios"
+  },
+  {
+    "id": "MT-EP00-HU06",
+    "title": "Distinguir jornada contractual de malla operativa",
+    "epic_file": "EP-00-Integracion-GRH.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla (coordinador/supervisora según rol)",
+    "quiero": "consultar la jornada contractual como referencia sin modificarla al programar la malla",
+    "para": "separar condición laboral de la programación operativa diaria",
+    "cubren": [
+      "Lectura de jornada contractual como referencia",
+      "Programación operativa independiente (persona × fecha × turno/estado × atributos)",
+      "Actualizar work_schedule / schedule_assignment desde Malla",
+      "Tratar la malla como fuente de jornada contractual"
+    ],
+    "reglas": [
+      "La jornada contractual define condiciones laborales; la malla define la operación por fecha.",
+      "Guardar una celda no altera la jornada contractual.",
+      "Las diferencias entre jornada y malla pueden advertirse si existe una regla configurada; no se corrigen escribiendo la jornada."
+    ],
+    "cas": [
+      [
+        "No escritura",
+        "un funcionario tiene jornada contractual definida",
+        "se le asigna un turno en malla distinto al habitual",
+        "la jornada contractual permanece igual"
+      ],
+      [
+        "Referencia",
+        "el coordinador consulta la ficha del funcionario en contexto de malla",
+        "abre la referencia de jornada",
+        "ve la jornada contractual en modo lectura"
+      ],
+      [
+        "Independencia",
+        "no hay jornada contractual cargada",
+        "se crea una celda operativa",
+        "la malla permite programar según reglas del frente (sin bloquear por ausencia de jornada, salvo regla explícita)"
+      ],
+      [
+        "Permisos",
+        "el usuario solo tiene permisos de Malla",
+        "intenta editar jornada contractual desde Malla",
+        "no existe esa acción"
+      ]
+    ],
+    "deps": "- HUs: MT-EP00-HU05\n- Microservicios / GRH: parametrization (work-schedules, schedule-assignments, working-profile) solo lectura\n\n---"
+  },
+  {
+    "id": "MT-EP00-HU07",
+    "title": "Registrar event types de notificación y timeline para Malla",
+    "epic_file": "EP-00-Integracion-GRH.md",
+    "como": "Super-administrador de la plataforma GRH / equipo de plataforma",
+    "quiero": "registrar los tipos de evento de notificación y de timeline que usará Malla",
+    "para": "reutilizar notification-service y auditoría GRH sin mailers ni logs paralelos",
+    "cubren": [
+      "Alta de event types: publicación, cambio de celda, novedad, intercambio (aprobación/rechazo/aplicación)",
+      "Despacho vía infraestructura existente (correo + popup según config del evento)",
+      "Motor de plantillas de correo propio de Malla",
+      "Auditoría paralela completa"
+    ],
+    "reglas": [
+      "Malla no envía correo directo; despacha eventos al servicio de notificaciones.",
+      "Los hechos de alto nivel van a timeline; el detalle de celda vive en historial de dominio (HU62).",
+      "Los despachos deben ser idempotentes por clave de evento de negocio."
+    ],
+    "cas": [
+      [
+        "Registro",
+        "se despliegan los event types de Malla",
+        "se consultan en el catálogo de notificaciones",
+        "existen los códigos definidos para publicación, cambio, novedad e intercambio"
+      ],
+      [
+        "Publicación",
+        "se publica una malla",
+        "el flujo termina OK",
+        "se despacha el evento de publicación a los destinatarios configurados"
+      ],
+      [
+        "Timeline",
+        "ocurre un cambio relevante de celda o publicación",
+        "se consulta timeline",
+        "existe el hecho de negocio correspondiente"
+      ],
+      [
+        "Idempotencia",
+        "el mismo evento se reintenta con la misma clave",
+        "se procesa el reintento",
+        "no se duplica la notificación al destinatario"
+      ]
+    ],
+    "deps": "- HUs: MT-EP00-HU01; usada por HU63, HU57, HU81\n- Microservicios / GRH: notification-service; audit/timeline; parametrization catálogo timeline si aplica\n\n---"
+  },
+  {
+    "id": "MT-EP00-HU08",
+    "title": "Consumir listado de empleados con filtro por área o vínculo a frente",
+    "epic_file": "EP-00-Integracion-GRH.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla (coordinador/supervisora según rol)",
+    "quiero": "listar funcionarios aplicables al frente filtrando por área, cargo y estado sin traer toda la empresa de golpe",
+    "para": "armar grupos de malla de forma usable y tenant-safe",
+    "cubren": [
+      "Listado paginado de empleados de la empresa",
+      "Filtros por área, cargo, estado y texto",
+      "Resolución de empleados del frente vía vínculo frente↔área (HU10) o selección manual",
+      "Alta de empleados",
+      "Filtros por frentes hardcodeados"
+    ],
+    "reglas": [
+      "Toda consulta de empleados usa la empresa del contexto autenticado.",
+      "Si el servicio de empleados no expone filtro por área, Malla debe paginar y filtrar de forma explícita documentada, o solicitar la extensión del API.",
+      "No se cachea padrón completo de otra empresa."
+    ],
+    "cas": [
+      [
+        "Paginación",
+        "la empresa tiene cientos de empleados",
+        "se abre el selector de grupo",
+        "se cargan páginas o resultados filtrados, no un volcado único no paginado obligatorio"
+      ],
+      [
+        "Filtro área",
+        "el frente está vinculado a una o más áreas",
+        "se listan candidatos",
+        "se priorizan o filtran empleados de esas áreas según configuración"
+      ],
+      [
+        "Tenant",
+        "existen empleados en otra empresa",
+        "se lista",
+        "no aparecen"
+      ],
+      [
+        "Estado",
+        "hay empleados inactivos",
+        "se aplica filtro de activos",
+        "solo se ofrecen los que cumplen el filtro"
+      ]
+    ],
+    "deps": "- HUs: MT-EP00-HU05, MT-EP01-HU10\n- Microservicios / GRH: employee-service (extender filtro areaId si falta); Malla BFF/use case"
+  },
+  {
+    "id": "MT-EP01-HU09",
+    "title": "Parametrizar frentes operativos de la empresa",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización (o administrador de empresa con ese permiso)",
+    "quiero": "registrar frentes operativos con código, nombre, descripción y estado pertenecientes a mi empresa",
+    "para": "configurar operaciones distintas sin depender de una lista fija de nombres de negocio",
+    "cubren": [
+      "CRUD de frentes por empresa",
+      "Código único por empresa",
+      "Activar/inactivar",
+      "Enum de producto Contact Center/Sitio/Mesa/Lab",
+      "Ítems de menú de plataforma por frente"
+    ],
+    "reglas": [
+      "El frente es un catálogo tenant-scoped, no un enum de aplicación.",
+      "Un frente inactivo no se ofrece para nuevas mallas.",
+      "Los nombres de operaciones actuales son solo datos de configuración o seeds de ejemplo."
+    ],
+    "cas": [
+      [
+        "Alta",
+        "el usuario tiene permiso de parametrización",
+        "crea un frente con código único en su empresa",
+        "el frente queda disponible solo para esa empresa"
+      ],
+      [
+        "Unicidad",
+        "ya existe el código en la empresa",
+        "intenta crear otro con el mismo código",
+        "el sistema rechaza por duplicado"
+      ],
+      [
+        "Sin defaults de producto",
+        "una empresa nueva sin seeds",
+        "abre el catálogo de frentes",
+        "no asume frentes predefinidos de otras operaciones"
+      ],
+      [
+        "Multiempresa",
+        "empresa A tiene frentes",
+        "usuario de empresa B lista frentes",
+        "no ve los de A"
+      ],
+      [
+        "Inactivo",
+        "un frente está inactivo",
+        "se crea una malla",
+        "ese frente no aparece en el selector"
+      ]
+    ],
+    "deps": "- HUs: MT-EP00-HU02, MT-EP00-HU04\n- Microservicios / GRH: Malla (nuevo dominio)\n\n---"
+  },
+  {
+    "id": "MT-EP01-HU10",
+    "title": "Configurar capacidades, estrategia de armado y publicación del frente",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización (o administrador de empresa con ese permiso)",
+    "quiero": "definir para cada frente el periodo de planificación por defecto, la estrategia de armado, la separación constructor/publicador, la editabilidad post-publicación y las capacidades disponibles",
+    "para": "que el mismo producto se adapte a cada operación sin redesplegar código",
+    "cubren": [
+      "Periodo por defecto (valores configurables: semanal, quincenal, mensual u otros definidos en catálogo de periodos)",
+      "Estrategia de armado: ninguna, manual, asistida, automática",
+      "Flags de publicación y roles lógicos constructor/publicador",
+      "Vínculo opcional a una o más áreas GRH",
+      "Habilitación de solicitudes de intercambio (default deshabilitado)",
+      "Implementar el algoritmo de rotación (EP-03)",
+      "Hardcodear periodos por nombre de frente"
+    ],
+    "reglas": [
+      "Si una capacidad está deshabilitada, la UI y las API no exigen ni persisten ese atributo en celdas nuevas.",
+      "Si la estrategia es manual, las acciones de rotación automática permanecen deshabilitadas.",
+      "Si constructor/publicador está separado, quien solo construye no publica; envía a revisión según flujo HU57.",
+      "Publicar con advertencias solo si el flag del frente lo permite.",
+      "El vínculo a áreas GRH es opcional; el frente sigue siendo entidad propia."
+    ],
+    "cas": [
+      [
+        "Capacidad off",
+        "el frente tiene deshabilitado territorio",
+        "se edita una celda",
+        "no se solicita ni muestra territorio"
+      ],
+      [
+        "Estrategia",
+        "estrategia = manual",
+        "el usuario abre rotación automática",
+        "la acción no está disponible e indica que la configuración del frente no la habilita"
+      ],
+      [
+        "Constructor",
+        "separación constructor/publicador activa",
+        "el constructor intenta publicar",
+        "solo puede enviar a revisión o se le niega publicar según config"
+      ],
+      [
+        "Intercambio off",
+        "solicitudes deshabilitadas en el frente",
+        "un empleado abre su programación",
+        "no ve la acción de solicitar intercambio"
+      ],
+      [
+        "Auditoría config",
+        "se cambia la estrategia de armado",
+        "se guarda",
+        "queda trazabilidad de antes/después, usuario y fecha"
+      ],
+      [
+        "Tenant",
+        "se edita config de un frente",
+        "persiste",
+        "solo afecta a la empresa dueña del frente"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU09, MT-EP00-HU03\n- Microservicios / GRH: Malla; parametrization áreas (vínculo opcional)\n\n---"
+  },
+  {
+    "id": "MT-EP01-HU11",
+    "title": "Parametrizar plantillas de turno",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización (o administrador de empresa con ese permiso)",
+    "quiero": "registrar plantillas de turno con código, nombre, horarios, color, cruce de medianoche y aplicabilidad por frente",
+    "para": "reutilizar definiciones horarias al armar mallas sin quemar turnos en código",
+    "cubren": [
+      "CRUD plantillas por empresa y aplicabilidad a frentes",
+      "Duración calculada, color, nocturnidad, activo/inactivo",
+      "Asignar turnos a celdas (HU30)",
+      "Listas fijas 1–12"
+    ],
+    "reglas": [
+      "Las plantillas son catálogo tenant-scoped.",
+      "Un turno inactivo no se ofrece en nuevas asignaciones.",
+      "Los códigos de ejemplo de Excel son seeds, no enums."
+    ],
+    "cas": [
+      [
+        "Alta",
+        "existe al menos un frente",
+        "crea plantilla con código único en el alcance definido",
+        "queda disponible para asignar en frentes autorizados"
+      ],
+      [
+        "Medianoche",
+        "hora fin es menor que hora inicio y se marca cruce de medianoche",
+        "se guarda",
+        "la duración se calcula cruzando día"
+      ],
+      [
+        "Inactivo",
+        "plantilla inactiva",
+        "se asigna celda nueva",
+        "no aparece en el selector"
+      ],
+      [
+        "Tenant",
+        "otra empresa",
+        "lista plantillas",
+        "no ve las ajenas"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU09\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP01-HU12",
+    "title": "Configurar horarios distintos por día en un turno",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización (o administrador de empresa con ese permiso)",
+    "quiero": "definir para una plantilla horarios diferentes según día de la semana u otros criterios de día configurables",
+    "para": "representar turnos que no tienen el mismo horario todos los días",
+    "cubren": [
+      "Variantes de horario por día asociadas a la plantilla",
+      "Reglas de cobertura"
+    ],
+    "reglas": [
+      "Si no hay variante para un día, aplica el horario base de la plantilla.",
+      "Las variantes pertenecen a la misma empresa que la plantilla."
+    ],
+    "cas": [
+      [
+        "Variante",
+        "existe una plantilla",
+        "se define horario distinto para un día de la semana",
+        "al asignar ese día se usa la variante"
+      ],
+      [
+        "Default",
+        "no hay variante para el día",
+        "se asigna la plantilla",
+        "usa horario base"
+      ],
+      [
+        "Permisos",
+        "usuario sin ACTUALIZAR en Parametrización",
+        "intenta editar variantes",
+        "se niega"
+      ],
+      [
+        "Tenant",
+        "plantilla de otra empresa",
+        "intenta editar",
+        "no accesible"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU11\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP01-HU13",
+    "title": "Parametrizar break y almuerzo del turno",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización (o administrador de empresa con ese permiso)",
+    "quiero": "definir pausas (break, almuerzo u otros tipos de pausa del catálogo) asociadas a una plantilla",
+    "para": "que la operación programe pausas según configuración y no según reglas fijas por frente",
+    "cubren": [
+      "Tipos de pausa configurables",
+      "Horario o duración de pausa por plantilla",
+      "Distribución automática en grilla (HU52)"
+    ],
+    "reglas": [
+      "Las pausas son datos de plantilla; su obligatoriedad y efecto en cobertura lo definen reglas (HU25/HU24).",
+      "No se asume que todos los frentes usan break y almuerzo."
+    ],
+    "cas": [
+      [
+        "Alta pausa",
+        "plantilla activa",
+        "se agregan una o más pausas con tipo e intervalo",
+        "quedan asociadas a la plantilla"
+      ],
+      [
+        "Sin pausas",
+        "frente/plantilla sin pausas",
+        "se asigna el turno",
+        "no se exigen pausas"
+      ],
+      [
+        "Validación",
+        "pausa fuera del horario del turno",
+        "se guarda",
+        "el sistema rechaza o advierte según regla configurada"
+      ],
+      [
+        "Tenant",
+        "otra empresa",
+        "consulta pausas",
+        "no ve datos ajenos"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU11\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP01-HU14",
+    "title": "Parametrizar estados de celda con flags de comportamiento",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización (o administrador de empresa con ese permiso)",
+    "quiero": "registrar estados operativos de celda con código, nombre, color y flags que definen su comportamiento",
+    "para": "representar novedades y situaciones operativas sin HUs ni enums por cada estado de negocio",
+    "cubren": [
+      "CRUD estados tenant-scoped",
+      "Flags: cuenta horas ordinarias/extra/recargo/festivo; afecta cobertura; disponible para asignación de casos; requiere motivo; permite turno; permite ubicación; notifica empleado; requiere soporte; permite modificación",
+      "HUs separadas por vacaciones, incapacidad, actividad, etc.",
+      "Cálculo monetario"
+    ],
+    "reglas": [
+      "Los estados son catálogo; vacaciones/incapacidad/actividad/descanso son ítems de datos, no tipos de sistema.",
+      "El efecto en horas lo determinan los flags + motor de horas (HU70).",
+      "Si un estado no es asignable a casos, la consulta operativa lo excluye de disponibilidad operativa según flag.",
+      "ex-HU50 y ex-HU54 originales quedan absorbidas por estos flags."
+    ],
+    "cas": [
+      [
+        "Alta estado",
+        "usuario con permiso",
+        "crea estado con flags",
+        "queda disponible en celdas de la empresa (y frentes según aplicabilidad)"
+      ],
+      [
+        "No suma horas",
+        "estado con flag cuenta horas ordinarias = no",
+        "se calcula el periodo",
+        "esa celda no aporta horas ordinarias"
+      ],
+      [
+        "Afecta cobertura",
+        "estado con afecta cobertura = no",
+        "se evalúa cobertura",
+        "la persona no cuenta para el mínimo de esa dimensión"
+      ],
+      [
+        "Motivo",
+        "estado requiere motivo = sí",
+        "se aplica a celda sin motivo",
+        "el sistema bloquea o advierte según severidad configurada"
+      ],
+      [
+        "Tenant",
+        "estados de empresa A",
+        "empresa B lista",
+        "no los ve"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU09\n- Microservicios / GRH: Malla"
+  },
+  {
+    "id": "MT-EP01-HU15",
+    "title": "Parametrizar campañas o tareas de celda",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización (o administrador de empresa con ese permiso)",
+    "quiero": "registrar campañas o tareas con código, nombre, color, vigencia y aplicabilidad a frentes",
+    "para": "etiquetar celdas sin hardcodear nombres de campaña",
+    "cubren": [
+      "CRUD campañas/tareas",
+      "Vigencia y activo",
+      "Asignación en celda (HU36)"
+    ],
+    "reglas": [
+      "Solo aplica si el frente tiene la capacidad habilitada (HU10/HU26).",
+      "Ejemplos de operación son seeds."
+    ],
+    "cas": [
+      [
+        "Alta",
+        "capacidad campañas habilitada en un frente",
+        "crea campaña vigente",
+        "aparece al asignar celdas de ese frente"
+      ],
+      [
+        "Vigencia",
+        "campaña fuera de vigencia",
+        "se asigna celda",
+        "no se ofrece"
+      ],
+      [
+        "Capacidad off",
+        "frente sin campañas",
+        "se edita celda",
+        "no pide campaña"
+      ],
+      [
+        "Tenant",
+        "otra empresa",
+        "lista",
+        "no ve campañas ajenas"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU10\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP01-HU16",
+    "title": "Parametrizar territorio con niveles configurables",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización (o administrador de empresa con ese permiso)",
+    "quiero": "definir la estructura territorial del frente con N niveles nombrados por configuración",
+    "para": "soportar jerarquías distintas sin fijar Regional/Zona/SPT en código",
+    "cubren": [
+      "Definición de niveles por frente o empresa",
+      "Árbol de nodos territoriales",
+      "Activo/inactivo",
+      "Hardcodear 3 niveles con nombres fijos"
+    ],
+    "reglas": [
+      "Los nombres de nivel son configuración, no enums de producto.",
+      "Solo visible si el frente habilita territorio."
+    ],
+    "cas": [
+      [
+        "Niveles",
+        "el frente habilita territorio con K niveles nombrados",
+        "se crean nodos",
+        "la UI respeta esa jerarquía"
+      ],
+      [
+        "Sin territorio",
+        "capacidad deshabilitada",
+        "se opera la malla",
+        "no se exige territorio"
+      ],
+      [
+        "Tenant",
+        "nodos de otra empresa",
+        "lista",
+        "no visibles"
+      ],
+      [
+        "Inactivo",
+        "nodo inactivo",
+        "asigna celda",
+        "no se ofrece"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU10\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP01-HU17",
+    "title": "Parametrizar modalidades de trabajo",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización (o administrador de empresa con ese permiso)",
+    "quiero": "registrar modalidades (presencial, virtual u otras) con flag que indique si requieren sitio",
+    "para": "extender modalidades sin enums fijos",
+    "cubren": [
+      "CRUD modalidades",
+      "Flag requiereSitio",
+      "if (virtual) en código"
+    ],
+    "reglas": [
+      "Presencial/virtual/híbrido son ejemplos de datos, no tipos de sistema.",
+      "La obligatoriedad de sitio la define el flag + capacidad del frente."
+    ],
+    "cas": [
+      [
+        "Alta",
+        "permiso de parametrización",
+        "crea modalidad con requiereSitio",
+        "al asignar, si requiereSitio y capacidad sitio on, exige sitio"
+      ],
+      [
+        "Nueva modalidad",
+        "se necesita una modalidad nueva",
+        "se crea en catálogo",
+        "no requiere despliegue de código"
+      ],
+      [
+        "Tenant",
+        "otra empresa",
+        "lista",
+        "aislada"
+      ],
+      [
+        "Capacidad off",
+        "frente sin modalidad",
+        "edita celda",
+        "no pide modalidad"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU10\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP01-HU18",
+    "title": "Parametrizar sitios de asistencia",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización (o administrador de empresa con ese permiso)",
+    "quiero": "registrar sitios de asistencia de la empresa aplicables a frentes",
+    "para": "ubicar la operación sin inventar maestro de sedes en GRH ni especializar un sitio por nombre",
+    "cubren": [
+      "CRUD sitios",
+      "Aplicabilidad a frentes",
+      "Activo",
+      "Tratar un nombre de sitio como caso especial de producto"
+    ],
+    "reglas": [
+      "Sitios son catálogo Malla; GRH no provee sedes hoy.",
+      "Cualquier nombre operativo es un ítem de catálogo."
+    ],
+    "cas": [
+      [
+        "Alta",
+        "capacidad sitio habilitada",
+        "crea sitio",
+        "disponible en celdas del frente"
+      ],
+      [
+        "Inactivo",
+        "sitio inactivo",
+        "asigna",
+        "no aparece"
+      ],
+      [
+        "Tenant",
+        "otra empresa",
+        "lista",
+        "no ve sitios ajenos"
+      ],
+      [
+        "Sin hardcoding",
+        "se documentan ejemplos",
+        "se implementa",
+        "ningún sitio aparece como condición en código"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU10\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP01-HU19",
+    "title": "Parametrizar tipos y restricciones de persona",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización (o administrador de empresa con ese permiso)",
+    "quiero": "definir tipos de restricción y registrar restricciones por persona con alcance, vigencia y efecto",
+    "para": "respetar limitaciones individuales sin categorías quemadas",
+    "cubren": [
+      "Catálogo de tipos de restricción",
+      "Restricción: persona, vigencia, días/franjas, turnos/sitios/modalidades permitidos o no, efecto bloquear/advertir",
+      "Tipos estudio/salud como enums"
+    ],
+    "reglas": [
+      "Los tipos son catálogo tenant-scoped.",
+      "El motor de asignación/rotación consume restricciones (HU55).",
+      "Efecto bloquear impide guardar; advertir permite con confirmación según severidad."
+    ],
+    "cas": [
+      [
+        "Tipo",
+        "parametrizador",
+        "crea un tipo de restricción",
+        "queda disponible para usar en restricciones"
+      ],
+      [
+        "Restricción",
+        "persona con restricción vigente que bloquea un turno",
+        "se intenta asignar ese turno",
+        "se aplica el efecto configurado"
+      ],
+      [
+        "Vigencia",
+        "restricción vencida",
+        "se asigna",
+        "no aplica"
+      ],
+      [
+        "Tenant",
+        "persona de otra empresa",
+        "alta restricción",
+        "imposible"
+      ]
+    ],
+    "deps": "- HUs: MT-EP00-HU05, MT-EP01-HU25\n- Microservicios / GRH: Malla; employee (identidad)\n\n---"
+  },
+  {
+    "id": "MT-EP01-HU20",
+    "title": "Usar festivos del calendario de empresa",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla (coordinador/supervisora según rol)",
+    "quiero": "considerar los festivos definidos en el calendario GRH de la empresa al programar y calcular horas",
+    "para": "no duplicar calendarios",
+    "cubren": [
+      "Lectura de festivos company calendar",
+      "Uso en reglas de hora festiva si están configuradas",
+      "CRUD de festivos dentro de Malla"
+    ],
+    "reglas": [
+      "Fuente de verdad de festivos = calendario de empresa GRH.",
+      "Malla no mantiene un calendario paralelo de festivos."
+    ],
+    "cas": [
+      [
+        "Lectura",
+        "hay festivo en calendario empresa",
+        "se visualiza el día en malla",
+        "se identifica como festivo"
+      ],
+      [
+        "Horas",
+        "existen reglas de tipo hora festiva",
+        "se calcula el día festivo",
+        "se clasifica según reglas HU22/HU70"
+      ],
+      [
+        "Tenant",
+        "festivos de otra empresa",
+        "consulta",
+        "no aplican"
+      ],
+      [
+        "Sin calendario",
+        "empresa sin festivos cargados",
+        "opera malla",
+        "no inventa festivos"
+      ]
+    ],
+    "deps": "- HUs: MT-EP00-HU05, MT-EP01-HU22\n- Microservicios / GRH: parametrization company-calendars / holidays\n\n---"
+  },
+  {
+    "id": "MT-EP01-HU21",
+    "title": "Parametrizar cortes de nómina",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización (o administrador de empresa con ese permiso)",
+    "quiero": "definir la frecuencia y fechas de corte usadas para agrupar horas a entregar",
+    "para": "alinear reportes de horas con el ciclo de la empresa sin liquidar dinero",
+    "cubren": [
+      "Config de corte por empresa (y override por frente si se habilita)",
+      "Periodos de corte",
+      "Cálculo de pesos",
+      "Integración contable"
+    ],
+    "reglas": [
+      "Malla entrega horas por corte; no calcula valores monetarios.",
+      "La frecuencia y días de corte son configuración."
+    ],
+    "cas": [
+      [
+        "Config",
+        "se define frecuencia y anclas de corte",
+        "se consulta un periodo",
+        "el sistema determina el rango de corte aplicable"
+      ],
+      [
+        "Reporte",
+        "existe malla en el rango",
+        "se pide horas del corte",
+        "agrupa según la config (HU70)"
+      ],
+      [
+        "Tenant",
+        "cortes de otra empresa",
+        "consulta",
+        "no visibles"
+      ],
+      [
+        "Sin dinero",
+        "se genera salida de corte",
+        "se inspecciona",
+        "no incluye campos de liquidación monetaria"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU22, MT-EP08-HU70\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP01-HU22",
+    "title": "Parametrizar tipos de hora y reglas de clasificación",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización (o administrador de empresa con ese permiso)",
+    "quiero": "definir tipos de hora (ordinaria, extra, festiva, nocturna, recargo u otros) con condiciones, prioridad y aplicabilidad",
+    "para": "clasificar horas sin fórmulas quemadas por frente",
+    "cubren": [
+      "Catálogo tipos de hora",
+      "Reglas de clasificación con prioridad",
+      "Cálculo de dinero"
+    ],
+    "reglas": [
+      "ORD/EXT/FES etc. son códigos de catálogo/seeds, no enums rígidos de producto.",
+      "La prioridad resuelve solapes de clasificación."
+    ],
+    "cas": [
+      [
+        "Alta tipo",
+        "parametrizador",
+        "crea tipo de hora",
+        "disponible para el motor HU70"
+      ],
+      [
+        "Prioridad",
+        "dos reglas aplican al mismo intervalo",
+        "se clasifica",
+        "gana la de mayor prioridad según config"
+      ],
+      [
+        "Tenant",
+        "otra empresa",
+        "lista tipos",
+        "aislados"
+      ],
+      [
+        "Extensibilidad",
+        "se necesita un tipo nuevo",
+        "se crea en catálogo",
+        "sin despliegue de lógica específica"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU21\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP01-HU23",
+    "title": "Parametrizar reglas de compensatorio",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización (o administrador de empresa con ese permiso)",
+    "quiero": "definir reglas que, ante umbrales y tipos de día configurables, sugieran o apliquen estados/acciones de compensatorio",
+    "para": "representar políticas distintas sin fijar cantidades de domingos u otros días en código",
+    "cubren": [
+      "Reglas: ventana temporal, tipo de día, umbral, acción (sugerir estado, advertir, bloquear), severidad",
+      "Regla fija de tres domingos"
+    ],
+    "reglas": [
+      "Cualquier umbral numérico es parámetro de la regla.",
+      "La aplicación en reporte consume estas reglas (HU76)."
+    ],
+    "cas": [
+      [
+        "Alta regla",
+        "se configura umbral N sobre tipo de día D en ventana V",
+        "se evalúa",
+        "si se cumple, aplica la acción configurada"
+      ],
+      [
+        "Inactiva",
+        "regla inactiva",
+        "evaluación",
+        "no se considera"
+      ],
+      [
+        "Por frente",
+        "dos frentes con umbrales distintos",
+        "se evalúa cada uno",
+        "usa su propia regla"
+      ],
+      [
+        "Tenant",
+        "otra empresa",
+        "no ve reglas ajenas",
+        "aislamiento OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU25, MT-EP01-HU14\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP01-HU24",
+    "title": "Parametrizar reglas de cobertura",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización (o administrador de empresa con ese permiso)",
+    "quiero": "definir cobertura mínima y máxima por dimensiones configurables con severidad",
+    "para": "controlar dotación sin reglas del tipo mínimo fijo por región en código",
+    "cubren": [
+      "Dimensiones: fecha, franja, turno, territorio, sitio, modalidad, campaña, frente (según capacidades)",
+      "min/max + severidad info/advertencia/bloqueo + vigencia",
+      "mínimo N técnicos hardcodeado"
+    ],
+    "reglas": [
+      "La evaluación usa solo dimensiones habilitadas en el frente.",
+      "Personas con estado que no afecta cobertura no cuentan."
+    ],
+    "cas": [
+      [
+        "Alta",
+        "se crea regla min=X en dimensión configurada",
+        "la malla queda por debajo",
+        "se emite hallazgo con la severidad definida"
+      ],
+      [
+        "Máximo",
+        "se supera max",
+        "evaluación",
+        "aplica severidad de la regla"
+      ],
+      [
+        "Dimensión off",
+        "frente sin territorio",
+        "no se exigen reglas de territorio",
+        "no aparecen"
+      ],
+      [
+        "Tenant",
+        "reglas ajenas",
+        "no visibles",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU25, MT-EP01-HU14, MT-EP01-HU10\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP01-HU25",
+    "title": "Motor de reglas de validación parametrizable",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización (o administrador de empresa con ese permiso)",
+    "quiero": "administrar reglas de validación con código, alcance, parámetros, prioridad, severidad y estado, y evaluarlas al asignar o publicar",
+    "para": "centralizar solape, horas, cobertura, descanso, repetición, restricciones, anticipación e intercambio sin constantes en código",
+    "cubren": [
+      "CRUD reglas por empresa/frente",
+      "Severidades: informativa, advertencia, bloqueo",
+      "Evaluación en asignación, publicación, rotación e intercambio",
+      "UI completa de conflictos (HU45)",
+      "DSL visual avanzado (futuro)"
+    ],
+    "reglas": [
+      "Invariante de dominio: solape horario real de la misma persona en el mismo instante es siempre bloqueo.",
+      "Horas máximas/mínimas, cobertura, repetición, celda vacía, anticipación, etc. son reglas parametrizables.",
+      "Regla inactiva no se evalúa.",
+      "Parámetros numéricos viven en la regla, nunca en el título de una HU ni en constantes de negocio en código."
+    ],
+    "cas": [
+      [
+        "Horas máximas",
+        "regla max_hours_period = N para el frente",
+        "la malla supera N",
+        "se genera hallazgo con la severidad de la regla"
+      ],
+      [
+        "Solape",
+        "dos asignaciones se solapan en el tiempo para la misma persona",
+        "se intenta guardar",
+        "se bloquea"
+      ],
+      [
+        "Inactiva",
+        "regla inactiva",
+        "validación",
+        "no aparece"
+      ],
+      [
+        "Alcance frente",
+        "regla solo del frente A",
+        "se valida malla del frente B",
+        "no aplica"
+      ],
+      [
+        "Tenant",
+        "reglas empresa A",
+        "empresa B",
+        "aisladas"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU10; consumida por HU45, HU55, HU57, HU79\n- Microservicios / GRH: Malla (domain service)"
+  },
+  {
+    "id": "MT-EP01-HU26",
+    "title": "Configurar flags de atributos de celda del frente",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización (o administrador de empresa con ese permiso)",
+    "quiero": "activar o desactivar qué atributos puede tener una celda en el frente (territorio, campaña, modalidad, sitio, nota, doble turno, etc.)",
+    "para": "mostrar en grilla solo lo que la operación necesita",
+    "cubren": [
+      "Flags de atributos de celda por frente",
+      "Estrategia de armado (HU10)",
+      "Crear los catálogos base"
+    ],
+    "reglas": [
+      "HU10 define estrategia/publicación/vínculos; HU26 detalla atributos de celda visibles/editables.",
+      "Atributo off ⇒ no se captura en UI ni se exige en API de celda."
+    ],
+    "cas": [
+      [
+        "Flag off",
+        "doble turno deshabilitado",
+        "se edita celda",
+        "no permite segundo turno"
+      ],
+      [
+        "Flag on",
+        "nota habilitada",
+        "se edita celda",
+        "permite observación"
+      ],
+      [
+        "Consistencia",
+        "se deshabilita campaña con celdas ya etiquetadas",
+        "se consulta histórico",
+        "se conserva dato histórico; nuevas celdas no piden campaña"
+      ],
+      [
+        "Tenant",
+        "config ajena",
+        "no visible",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU10\n- Microservicios / GRH: Malla"
+  },
+  {
+    "id": "MT-EP01-HU27",
+    "title": "Importación asistida desde Excel de operación",
+    "epic_file": "EP-01-Parametrizacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización (o administrador de empresa con ese permiso)",
+    "quiero": "cargar un Excel de operación para sugerir catálogos (turnos, estados, sitios, campañas) sin convertir el Excel en modelo de datos",
+    "para": "acelerar el onboarding de un frente descubriendo columnas y valores",
+    "cubren": [
+      "Mapeo asistido columna→catálogo",
+      "Sugerencias de alta",
+      "Confirmación humana",
+      "Persistir filas Excel como tablas espejo",
+      "Reemplazar la grilla por Excel"
+    ],
+    "reglas": [
+      "El Excel es fuente de descubrimiento, no esquema de BD.",
+      "Nada se crea sin confirmación del usuario autorizado."
+    ],
+    "cas": [
+      [
+        "Sugerencia",
+        "Excel con columnas de turnos",
+        "se procesa",
+        "sugiere plantillas candidatas"
+      ],
+      [
+        "Confirmación",
+        "hay sugerencias",
+        "usuario confirma un subconjunto",
+        "solo ese subconjunto se crea en catálogos"
+      ],
+      [
+        "Tenant",
+        "import",
+        "persiste",
+        "bajo la empresa del usuario"
+      ],
+      [
+        "No espejo",
+        "import termina",
+        "se inspecciona modelo",
+        "no existe tabla que replique el Excel crudo como fuente operativa"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU11..HU19\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP02-HU28",
+    "title": "Crear malla por periodo y frente",
+    "epic_file": "EP-02-Construccion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla (coordinador/supervisora según rol)",
+    "quiero": "crear una malla asociada a un frente, con rango de fechas según el periodo configurado, en estado borrador",
+    "para": "iniciar la programación operativa del periodo",
+    "cubren": [
+      "Alta de malla",
+      "Estado inicial borrador",
+      "Validación de frente y alcance",
+      "Asignación de celdas",
+      "Publicación"
+    ],
+    "reglas": [
+      "La malla pertenece a la empresa del usuario y a un frente de su alcance.",
+      "El periodo por defecto proviene de la config del frente; el usuario puede ajustar dentro de lo permitido."
+    ],
+    "cas": [
+      [
+        "Alta",
+        "frente activo y alcance OK",
+        "crea malla con fechas",
+        "queda en borrador"
+      ],
+      [
+        "Sin alcance",
+        "frente fuera de alcance",
+        "intenta crear",
+        "rechazo"
+      ],
+      [
+        "Tenant",
+        "frente de otra empresa",
+        "crear",
+        "imposible"
+      ],
+      [
+        "Duplicidad",
+        "ya existe malla solapada si la regla del frente lo prohíbe",
+        "crea",
+        "aplica severidad de la regla"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU10, MT-EP00-HU03\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP02-HU29",
+    "title": "Seleccionar grupo de funcionarios de la malla",
+    "epic_file": "EP-02-Construccion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla (coordinador/supervisora según rol)",
+    "quiero": "definir el conjunto de funcionarios que participan en la malla",
+    "para": "delimitar el universo de filas de la grilla",
+    "cubren": [
+      "Alta/baja de miembros",
+      "Filtros HU08",
+      "Asignar turnos"
+    ],
+    "reglas": [
+      "Solo empleados de la misma empresa.",
+      "Respetar filtros y paginación."
+    ],
+    "cas": [
+      [
+        "Agregar",
+        "malla borrador",
+        "agrega funcionarios",
+        "aparecen como filas"
+      ],
+      [
+        "Quitar",
+        "miembro sin celdas críticas o con política permitida",
+        "se quita",
+        "deja de listarse; historial de celdas previas se conserva"
+      ],
+      [
+        "Tenant",
+        "empleado otra empresa",
+        "agregar",
+        "imposible"
+      ],
+      [
+        "Permisos",
+        "sin ACTUALIZAR",
+        "modifica grupo",
+        "niega"
+      ]
+    ],
+    "deps": "- HUs: MT-EP02-HU28, MT-EP00-HU08\n- Microservicios / GRH: employee; Malla\n\n---"
+  },
+  {
+    "id": "MT-EP02-HU30",
+    "title": "Asignar turno o estado a una celda",
+    "epic_file": "EP-02-Construccion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla (coordinador/supervisora según rol)",
+    "quiero": "asignar a una persona y fecha un turno y/o estado operativo según catálogos y reglas",
+    "para": "construir la programación celda a celda",
+    "cubren": [
+      "Upsert de celda",
+      "Validación motor reglas",
+      "Origen manual",
+      "Publicación"
+    ],
+    "reglas": [
+      "Celda = persona × fecha (+ turnos/estado + atributos habilitados).",
+      "Se evalúa el motor de reglas al guardar.",
+      "No se modifica jornada contractual."
+    ],
+    "cas": [
+      [
+        "Asignar turno",
+        "malla editable",
+        "asigna plantilla activa",
+        "celda queda con turno y origen manual"
+      ],
+      [
+        "Estado",
+        "asigna estado del catálogo",
+        "guarda",
+        "aplica flags del estado"
+      ],
+      [
+        "Bloqueo regla",
+        "violación con severidad bloqueo",
+        "guarda",
+        "rechaza y muestra motivo"
+      ],
+      [
+        "Advertencia",
+        "severidad advertencia",
+        "guarda con confirmación si aplica",
+        "persiste y registra hallazgo"
+      ],
+      [
+        "Tenant/alcance",
+        "malla fuera de empresa o frente",
+        "edita",
+        "niega"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU11, MT-EP01-HU14, MT-EP01-HU25, MT-EP02-HU39\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP02-HU31",
+    "title": "Asignar segundo turno o turno extra el mismo día",
+    "epic_file": "EP-02-Construccion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla (coordinador/supervisora según rol)",
+    "quiero": "agregar un segundo turno el mismo día cuando la capacidad del frente lo permite",
+    "para": "cubrir jornadas partidas o extras operativas",
+    "cubren": [
+      "Multi-turno por celda/día según flag",
+      "Si capacidad doble turno off"
+    ],
+    "reglas": [
+      "Solo si HU26 habilita doble turno.",
+      "Solape real sigue siendo bloqueo.",
+      "Marca de extra si el catálogo/regla lo define."
+    ],
+    "cas": [
+      [
+        "Alta segundo",
+        "capacidad on y sin solape",
+        "agrega segundo turno",
+        "ambos quedan registrados"
+      ],
+      [
+        "Solape",
+        "horarios se cruzan",
+        "guarda",
+        "bloquea"
+      ],
+      [
+        "Capacidad off",
+        "flag off",
+        "intenta segundo turno",
+        "no disponible"
+      ],
+      [
+        "Reglas horas",
+        "supera max_hours_period",
+        "guarda",
+        "aplica severidad regla"
+      ]
+    ],
+    "deps": "- HUs: MT-EP02-HU30, MT-EP01-HU26, MT-EP01-HU25\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP02-HU32",
+    "title": "Asignar territorio a la celda",
+    "epic_file": "EP-02-Construccion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla (coordinador/supervisora según rol)",
+    "quiero": "asignar nodo territorial a la celda cuando el frente tiene la capacidad habilitada",
+    "para": "ubicar operativamente a la persona ese día",
+    "cubren": [
+      "Set territorio",
+      "Frentes sin territorio"
+    ],
+    "reglas": [
+      "Solo nodos activos del árbol del frente/empresa."
+    ],
+    "cas": [
+      [
+        "Asignar",
+        "capacidad on",
+        "elige nodo",
+        "queda en celda"
+      ],
+      [
+        "Off",
+        "capacidad off",
+        "edita",
+        "campo ausente"
+      ],
+      [
+        "Nodo inválido",
+        "nodo de otro frente/empresa",
+        "asigna",
+        "rechaza"
+      ],
+      [
+        "Cobertura",
+        "existen reglas por territorio",
+        "guarda",
+        "revalúa cobertura"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU16, MT-EP02-HU30\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP02-HU33",
+    "title": "Asignar modalidad y sitio a la celda",
+    "epic_file": "EP-02-Construccion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla (coordinador/supervisora según rol)",
+    "quiero": "definir modalidad y sitio de asistencia en la celda según flags y catálogos",
+    "para": "reflejar dónde y cómo asiste la persona",
+    "cubren": [
+      "Set modalidad/sitio"
+    ],
+    "reglas": [
+      "Si modalidad requiere sitio y capacidad sitio on, el sitio es obligatorio según severidad configurada."
+    ],
+    "cas": [
+      [
+        "OK",
+        "capacidades on",
+        "asigna modalidad y sitio válidos",
+        "persiste"
+      ],
+      [
+        "Requiere sitio",
+        "modalidad con requiereSitio y sin sitio",
+        "guarda",
+        "bloquea o advierte según regla"
+      ],
+      [
+        "Off",
+        "capacidades off",
+        "edita",
+        "campos ausentes"
+      ],
+      [
+        "Tenant",
+        "sitio ajeno",
+        "asigna",
+        "rechaza"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU17, MT-EP01-HU18, MT-EP02-HU30\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP02-HU34",
+    "title": "Registrar observación en la celda",
+    "epic_file": "EP-02-Construccion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla (coordinador/supervisora según rol)",
+    "quiero": "agregar una nota u observación a la celda cuando la capacidad está habilitada",
+    "para": "dejar contexto operativo sin abusos de campos",
+    "cubren": [
+      "Texto de observación",
+      "Límite de longitud configurable"
+    ],
+    "reglas": [
+      "Si el estado requiere motivo, el motivo puede mapearse a este campo o a campo motivo dedicado según diseño."
+    ],
+    "cas": [
+      [
+        "Alta",
+        "capacidad nota on",
+        "guarda texto",
+        "visible en celda e historial si cambia"
+      ],
+      [
+        "Off",
+        "capacidad off",
+        "intenta",
+        "no disponible"
+      ],
+      [
+        "Límite",
+        "excede longitud",
+        "guarda",
+        "rechaza"
+      ],
+      [
+        "Permisos",
+        "solo LEER",
+        "edita nota",
+        "niega"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU26, MT-EP02-HU30\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP02-HU35",
+    "title": "Visualizar grilla operativa",
+    "epic_file": "EP-02-Construccion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla (coordinador/supervisora según rol)",
+    "quiero": "ver la grilla personas × fechas con turnos, estados, colores, leyenda, atributos habilitados y hallazgos",
+    "para": "operar la malla de forma visual",
+    "cubren": [
+      "Render grilla",
+      "Leyenda",
+      "Indicadores de conflicto",
+      "Export (HU71)",
+      "Carga total sin ventana (prohibido: ver HU40)"
+    ],
+    "reglas": [
+      "La grilla consume ventana temporal y página de personas (HU40).",
+      "Colores vienen de catálogos, no de constantes de frente."
+    ],
+    "cas": [
+      [
+        "Vista",
+        "malla con celdas",
+        "abre grilla",
+        "ve filas/columnas de la ventana cargada"
+      ],
+      [
+        "Leyenda",
+        "existen turnos/estados con color",
+        "abre leyenda",
+        "lista códigos y colores del frente"
+      ],
+      [
+        "Conflictos",
+        "hay hallazgos",
+        "visualiza",
+        "se destacan celdas/reglas"
+      ],
+      [
+        "Permisos",
+        "sin LEER construcción",
+        "abre",
+        "niega"
+      ]
+    ],
+    "deps": "- HUs: MT-EP02-HU30, MT-EP02-HU40, MT-EP03-HU45\n- Microservicios / GRH: Malla FE\n\n---"
+  },
+  {
+    "id": "MT-EP02-HU36",
+    "title": "Asignar campaña o tarea a la celda",
+    "epic_file": "EP-02-Construccion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla (coordinador/supervisora según rol)",
+    "quiero": "etiquetar la celda con campaña/tarea si la capacidad está activa",
+    "para": "reflejar la actividad operativa del día",
+    "cubren": [
+      "Set campaña"
+    ],
+    "reglas": [
+      "Solo campañas vigentes y del frente/empresa."
+    ],
+    "cas": [
+      [
+        "OK",
+        "capacidad on",
+        "asigna campaña vigente",
+        "persiste"
+      ],
+      [
+        "Off",
+        "capacidad off",
+        "campo ausente",
+        "OK"
+      ],
+      [
+        "No vigente",
+        "campaña vencida",
+        "asigna",
+        "rechaza"
+      ],
+      [
+        "Tenant",
+        "campaña ajena",
+        "rechaza",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU15, MT-EP02-HU30\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP02-HU37",
+    "title": "Cubrir recurso de otro frente o área el mismo día",
+    "epic_file": "EP-02-Construccion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla (coordinador/supervisora según rol)",
+    "quiero": "asignar a una persona en una malla distinta el mismo día cuando las reglas de solape y horas lo permitan",
+    "para": "soportar coberturas cruzadas sin hardcodear frentes",
+    "cubren": [
+      "Asignación cruzada gobernada por reglas",
+      "Permitir solape real"
+    ],
+    "reglas": [
+      "La contabilización de horas en cruce sigue la configuración (cuenta en malla destino por defecto).",
+      "Solape horario real siempre bloquea."
+    ],
+    "cas": [
+      [
+        "Permitido",
+        "sin solape y reglas OK",
+        "asigna en segunda malla",
+        "ambas celdas existen"
+      ],
+      [
+        "Solape",
+        "horarios cruzan",
+        "bloquea",
+        "OK"
+      ],
+      [
+        "Horas",
+        "supera tope",
+        "aplica severidad",
+        "OK"
+      ],
+      [
+        "Tenant",
+        "malla otra empresa",
+        "imposible",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP02-HU30, MT-EP01-HU25\n- Microservicios / GRH: Malla"
+  },
+  {
+    "id": "MT-EP02-HU38",
+    "title": "Filtrar y buscar en la grilla por atributos habilitados",
+    "epic_file": "EP-02-Construccion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla (coordinador/supervisora según rol)",
+    "quiero": "filtrar la grilla por texto, turno, estado y atributos habilitados del frente",
+    "para": "encontrar rápido personas o situaciones",
+    "cubren": [
+      "Filtros dinámicos según flags"
+    ],
+    "reglas": [
+      "No mostrar filtros de capacidades deshabilitadas."
+    ],
+    "cas": [
+      [
+        "Filtro estado",
+        "hay varios estados",
+        "filtra uno",
+        "solo filas/celdas coincidentes en la ventana"
+      ],
+      [
+        "Sin filtro fantasma",
+        "territorio off",
+        "abre filtros",
+        "no aparece filtro territorio"
+      ],
+      [
+        "Permisos",
+        "LEER",
+        "filtra",
+        "permitido"
+      ],
+      [
+        "Tenant",
+        "datos",
+        "filtro",
+        "solo propia empresa"
+      ]
+    ],
+    "deps": "- HUs: MT-EP02-HU35, MT-EP01-HU26\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP02-HU39",
+    "title": "Control de concurrencia en edición de celdas",
+    "epic_file": "EP-02-Construccion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla (coordinador/supervisora según rol)",
+    "quiero": "evitar que dos ediciones concurrentes sobrescriban en silencio la misma celda",
+    "para": "proteger integridad operativa",
+    "cubren": [
+      "Versionado/optimistic locking por celda",
+      "Conflicto visible al usuario",
+      "Bloqueo pesimista de malla completa (no requerido)"
+    ],
+    "reglas": [
+      "Cada celda tiene versión; escribir con versión obsoleta falla con conflicto.",
+      "El usuario debe poder recargar y reintentar."
+    ],
+    "cas": [
+      [
+        "Conflicto",
+        "usuario A y B cargan misma celda",
+        "A guarda y luego B guarda con versión vieja",
+        "B recibe error de conflicto y no pisa a A"
+      ],
+      [
+        "OK",
+        "versión actual",
+        "guarda",
+        "incrementa versión"
+      ],
+      [
+        "Historial",
+        "guarda OK",
+        "consulta historial",
+        "incluye el cambio de A"
+      ],
+      [
+        "Permisos",
+        "sin ACTUALIZAR",
+        "guarda",
+        "niega antes del versionado"
+      ]
+    ],
+    "deps": "- HUs: MT-EP02-HU30, MT-EP05-HU62\n- Microservicios / GRH: Malla"
+  },
+  {
+    "id": "MT-EP02-HU40",
+    "title": "Carga parcial de grilla por ventana temporal y paginación de personas",
+    "epic_file": "EP-02-Construccion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla (coordinador/supervisora según rol)",
+    "quiero": "cargar solo la ventana de fechas y la página de personas necesarias",
+    "para": "operar mallas grandes sin payloads inmanejables",
+    "cubren": [
+      "API de grilla con from/to + page/size",
+      "Virtualización en UI",
+      "Descargar 1000×31 siempre"
+    ],
+    "reglas": [
+      "El backend no debe exigir devolver toda la malla para editar una ventana.",
+      "Los contadores globales pueden ser proyecciones/agregados aparte."
+    ],
+    "cas": [
+      [
+        "Ventana",
+        "malla de un mes",
+        "pide 7 días",
+        "solo recibe esos días"
+      ],
+      [
+        "Página",
+        "200 personas",
+        "pide página 1 size 50",
+        "recibe 50 filas"
+      ],
+      [
+        "Edición",
+        "celda de la ventana",
+        "guarda",
+        "no requiere recargar toda la malla"
+      ],
+      [
+        "Permisos/tenant",
+        "consulta",
+        "datos",
+        "solo empresa y alcance"
+      ]
+    ],
+    "deps": "- HUs: MT-EP02-HU35\n- Microservicios / GRH: Malla"
+  },
+  {
+    "id": "MT-EP02-HU41",
+    "title": "Copiar semana o aplicar asignación masiva",
+    "epic_file": "EP-02-Construccion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "copiar un rango de fechas o aplicar la misma asignación a varias celdas",
+    "para": "armar el periodo más rápido sin saltarme validaciones",
+    "cubren": [
+      "Copia de rango origen → destino",
+      "Asignación masiva a selección de celdas",
+      "Validación con motor de reglas e historial",
+      "Bypass de reglas",
+      "Copia entre empresas"
+    ],
+    "reglas": [
+      "Origen y destino pertenecen a la misma empresa y malla/frente autorizados.",
+      "Los bloqueos del motor de reglas no se aplican; se reportan.",
+      "Queda historial en celdas modificadas."
+    ],
+    "cas": [],
+    "deps": "- HUs: MT-EP02-HU30, MT-EP01-HU25, MT-EP05-HU62, MT-EP02-HU39\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP02-HU42",
+    "title": "Fijar atributo de celda por periodo",
+    "epic_file": "EP-02-Construccion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "fijar un atributo habilitado del frente para un funcionario en todo el periodo",
+    "para": "no repetir el mismo valor celda por celda",
+    "cubren": [
+      "Fijación de atributos habilitados (sitio, modalidad, territorio, campaña u otros según config)",
+      "Aplicación a periodo o subrango",
+      "Casos especiales por nombre de sitio o frente en el producto"
+    ],
+    "reglas": [
+      "Solo atributos habilitados en la configuración del frente.",
+      "Los valores vienen de catálogos de la empresa.",
+      "Una edición puntual posterior puede diferir y queda auditada."
+    ],
+    "cas": [],
+    "deps": "- HUs: MT-EP01-HU26, MT-EP02-HU30, MT-EP02-HU33, MT-EP05-HU62\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP03-HU43",
+    "title": "Visualizar indicadores de cobertura y contadores",
+    "epic_file": "EP-03-Validacion-Rotacion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "ver indicadores de cobertura y contadores calculados según las reglas y plantillas del frente",
+    "para": "detectar faltantes o excesos sin fórmulas fijas por operación",
+    "cubren": [
+      "Contadores por dimensiones habilitadas",
+      "Actualización al cambiar celdas de la ventana",
+      "Definir reglas de cobertura (HU24)"
+    ],
+    "reglas": [
+      "Los contadores se derivan de reglas HU24 y turnos/estados del catálogo, no de fórmulas Excel de un frente.",
+      "Personas con estado que no afecta cobertura no cuentan."
+    ],
+    "cas": [
+      [
+        "Vista",
+        "existen reglas de cobertura",
+        "abre indicadores",
+        "muestra min/max/actual por dimensión configurada"
+      ],
+      [
+        "Recalc",
+        "cambia una celda relevante",
+        "guarda",
+        "actualiza indicadores afectados"
+      ],
+      [
+        "Capacidad",
+        "dimensión no habilitada",
+        "abre indicadores",
+        "no muestra esa dimensión"
+      ],
+      [
+        "Tenant",
+        "consulta",
+        "datos",
+        "solo su empresa"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU24, MT-EP02-HU35\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP03-HU44",
+    "title": "Visualizar equilibrio de turnos por persona",
+    "epic_file": "EP-03-Validacion-Rotacion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "ver distribución de plantillas/estados por persona en el periodo según métricas configurables",
+    "para": "apoyar decisiones de equidad sin umbrales quemados",
+    "cubren": [
+      "Métricas de distribución configurables",
+      "Forzar equilibrio automático"
+    ],
+    "reglas": [
+      "Los umbrales de desequilibrio son reglas parametrizables (advertencia/bloqueo).",
+      "No existe una métrica única hardcodeada por frente."
+    ],
+    "cas": [
+      [
+        "Vista",
+        "malla con asignaciones",
+        "abre equilibrio",
+        "lista métricas por persona"
+      ],
+      [
+        "Regla",
+        "se supera umbral configurado",
+        "evalúa",
+        "marca hallazgo con severidad"
+      ],
+      [
+        "Permisos",
+        "LEER",
+        "consulta",
+        "permitido"
+      ],
+      [
+        "Tenant",
+        "datos",
+        "aislados",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU25, MT-EP02-HU35\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP03-HU45",
+    "title": "Evaluar y mostrar conflictos de validación en grilla",
+    "epic_file": "EP-03-Validacion-Rotacion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "ejecutar el motor de reglas y mostrar hallazgos en la grilla y un panel de conflictos",
+    "para": "corregir problemas antes de publicar",
+    "cubren": [
+      "Listado de hallazgos",
+      "Navegación a celda",
+      "Filtro por severidad",
+      "Administrar reglas (HU25)",
+      "Usar constantes numéricas de negocio en UI"
+    ],
+    "reglas": [
+      "Los mensajes muestran el nombre de la regla y sus parámetros, no constantes de producto.",
+      "Bloqueos impiden publicar si la config de publicación exige cero bloqueos."
+    ],
+    "cas": [
+      [
+        "Eval",
+        "hay violaciones",
+        "ejecuta validación",
+        "lista hallazgos con severidad"
+      ],
+      [
+        "Navegar",
+        "selecciona un hallazgo",
+        "hace clic",
+        "enfoca la celda"
+      ],
+      [
+        "Filtro",
+        "filtra solo bloqueos",
+        "aplica",
+        "oculta info/advertencias"
+      ],
+      [
+        "Sin hardcode",
+        "regla max_hours_period=N",
+        "muestra mensaje",
+        "incluye N desde la regla"
+      ],
+      [
+        "Tenant",
+        "validación",
+        "solo malla propia",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU25, MT-EP02-HU35\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP03-HU46",
+    "title": "Definir patrón de rotación genérico",
+    "epic_file": "EP-03-Validacion-Rotacion.md",
+    "como": "Usuario de la empresa con permiso de parametrización",
+    "quiero": "crear patrones como secuencia ordenada de elementos (turno/estado), cada uno con duración, formando un ciclo",
+    "para": "representar cualquier rotación (incluidos ejemplos 15/15 o 2×1) sin tipos enum de patrón",
+    "cubren": [
+      "CRUD patrón",
+      "Secuencia + duraciones + ciclo",
+      "Fecha inicio de anclaje",
+      "Respeto opcional de restricciones",
+      "Enums FIFTEEN_FIFTEEN / TWO_ONE",
+      "Aplicar a malla (HU50)"
+    ],
+    "reglas": [
+      "Un patrón es solo datos: secuencia, duraciones, ciclo, prioridad, vigencia.",
+      "No existen tipos de patrón de producto.",
+      "Ejemplos de negocio son seeds o instancias."
+    ],
+    "cas": [
+      [
+        "Alta",
+        "define secuencia de plantillas con duraciones",
+        "guarda",
+        "patrón reutilizable en la empresa"
+      ],
+      [
+        "Ciclo",
+        "secuencia completa",
+        "se consulta longitud de ciclo",
+        "es la suma de duraciones"
+      ],
+      [
+        "Sin enum",
+        "lista tipos de patrón del sistema",
+        "consulta",
+        "no hay tipos especiales; solo patrones creados"
+      ],
+      [
+        "Tenant",
+        "patrón ajeno",
+        "invisible",
+        "OK"
+      ],
+      [
+        "Inactivo",
+        "patrón inactivo",
+        "aplicar",
+        "no ofrecido"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU11, MT-EP01-HU14\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP03-HU47",
+    "title": "Vincular patrón de rotación a grupo y periodo",
+    "epic_file": "EP-03-Validacion-Rotacion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "asociar un patrón a una malla o subconjunto de personas y un rango de fechas",
+    "para": "preparar la simulación/aplicación controlada",
+    "cubren": [
+      "Vínculo patrón↔malla/grupo/fechas",
+      "Aplicar sin simular"
+    ],
+    "reglas": [
+      "Solo si la estrategia del frente es asistida o automática.",
+      "El vínculo no modifica celdas hasta aplicar (HU50) tras simulación (HU48)."
+    ],
+    "cas": [
+      [
+        "Vínculo",
+        "patrón activo y estrategia permite",
+        "asocia a grupo/fechas",
+        "queda listo para simular"
+      ],
+      [
+        "Estrategia manual",
+        "frente manual",
+        "intenta vincular auto",
+        "acción no disponible"
+      ],
+      [
+        "Alcance",
+        "personas fuera de malla",
+        "asocia",
+        "rechaza"
+      ],
+      [
+        "Tenant",
+        "patrón otra empresa",
+        "rechaza",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP03-HU46, MT-EP01-HU10, MT-EP02-HU29\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP03-HU48",
+    "title": "Simular patrón de rotación antes de aplicar",
+    "epic_file": "EP-03-Validacion-Rotacion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "ejecutar un dry-run del patrón que muestre asignaciones propuestas y conflictos sin alterar la malla",
+    "para": "revisar el impacto antes de escribir",
+    "cubren": [
+      "Resultado simulado",
+      "Lista de conflictos",
+      "Diff propuesto",
+      "Persistir simulación como malla real sin confirmación"
+    ],
+    "reglas": [
+      "La simulación no escribe celdas.",
+      "Debe mostrar qué sería automático y qué queda excluido (HU49)."
+    ],
+    "cas": [
+      [
+        "Dry-run",
+        "vínculo válido",
+        "simula",
+        "muestra propuesta sin cambiar malla"
+      ],
+      [
+        "Conflictos",
+        "hay violaciones",
+        "simula",
+        "lista conflictos detectados"
+      ],
+      [
+        "Exclusiones",
+        "personas excluidas",
+        "simula",
+        "no propone cambios para ellas"
+      ],
+      [
+        "Reintentar",
+        "ajusta parámetros",
+        "vuelve a simular",
+        "actualiza propuesta"
+      ],
+      [
+        "Permisos",
+        "sin ACTUALIZAR",
+        "simula si LEER+política lo permite o niega escritura posterior",
+        "según permisos"
+      ]
+    ],
+    "deps": "- HUs: MT-EP03-HU47, MT-EP03-HU49, MT-EP01-HU25\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP03-HU49",
+    "title": "Excluir personas o celdas de la rotación",
+    "epic_file": "EP-03-Validacion-Rotacion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "marcar personas o celdas concretas para que la rotación asistida/automática no las modifique",
+    "para": "proteger excepciones operativas",
+    "cubren": [
+      "Exclusiones por persona, rango o celda",
+      "—"
+    ],
+    "reglas": [
+      "Las exclusiones son tenant-scoped y auditables.",
+      "Celdas excluidas conservan su valor actual al aplicar."
+    ],
+    "cas": [
+      [
+        "Excluir persona",
+        "grupo vinculado",
+        "marca exclusión",
+        "simulación no la altera"
+      ],
+      [
+        "Excluir celda",
+        "día específico",
+        "excluye",
+        "propuesta la omite"
+      ],
+      [
+        "Quitar exclusión",
+        "había exclusión",
+        "quita",
+        "vuelve a participar"
+      ],
+      [
+        "Tenant",
+        "exclusión",
+        "propia empresa",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP03-HU47\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP03-HU50",
+    "title": "Aplicar resultado de rotación a la malla",
+    "epic_file": "EP-03-Validacion-Rotacion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "aplicar la propuesta simulada aceptada, marcando origen automático y dejando historial",
+    "para": "materializar la rotación de forma trazable",
+    "cubren": [
+      "Aplicación atómica o por lote con reporte",
+      "Origen=automático",
+      "Historial",
+      "Aplicar sin simulación previa si la config exige dry-run"
+    ],
+    "reglas": [
+      "Toda celda escrita por rotación registra origen automático.",
+      "Ajustes posteriores manuales cambian origen a manual (HU56).",
+      "Se revalidan reglas; bloqueos impiden aplicar esas celdas."
+    ],
+    "cas": [
+      [
+        "Aplicar",
+        "simulación aceptada sin bloqueos críticos",
+        "aplica",
+        "celdas actualizadas con origen automático"
+      ],
+      [
+        "Parcial",
+        "algunas celdas bloqueadas",
+        "aplica",
+        "omite bloqueadas y reporta"
+      ],
+      [
+        "Historial",
+        "celda cambia",
+        "consulta historial",
+        "antes/después + origen automático"
+      ],
+      [
+        "Sin simulación",
+        "config exige dry-run",
+        "aplica directo",
+        "rechaza"
+      ],
+      [
+        "Notificación",
+        "si flags de estado/config lo requieren",
+        "aplica",
+        "despacha eventos HU07"
+      ]
+    ],
+    "deps": "- HUs: MT-EP03-HU48, MT-EP05-HU62, MT-EP00-HU07\n- Microservicios / GRH: Malla; notification\n\n---"
+  },
+  {
+    "id": "MT-EP03-HU51",
+    "title": "Construcción asistida de asignaciones",
+    "epic_file": "EP-03-Validacion-Rotacion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "obtener sugerencias de asignación según la estrategia asistida del frente y aceptarlas o modificarlas",
+    "para": "acelerar el armado sin perder control humano",
+    "cubren": [
+      "Sugerencias de turnos/cobertura/descansos/sitios según config",
+      "Aceptar/rechazar por celda o lote",
+      "Estrategia automática plena sin revisión"
+    ],
+    "reglas": [
+      "Solo si estrategia=asistida (o automática con paso de revisión).",
+      "Sugerir ≠ aplicar; aplicar genera origen asistido/automático."
+    ],
+    "cas": [
+      [
+        "Sugerir",
+        "estrategia asistida",
+        "solicita sugerencias",
+        "recibe propuesta"
+      ],
+      [
+        "Aceptar",
+        "selecciona subconjunto",
+        "acepta",
+        "escribe celdas elegidas"
+      ],
+      [
+        "Modificar",
+        "ajusta una sugerencia",
+        "guarda",
+        "origen manual o asistido según diseño"
+      ],
+      [
+        "Estrategia",
+        "manual",
+        "sugerir",
+        "no disponible"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU10, MT-EP01-HU25, MT-EP03-HU46\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP03-HU52",
+    "title": "Distribuir breaks y almuerzos según plantillas y reglas",
+    "epic_file": "EP-03-Validacion-Rotacion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "proponer o aplicar distribución de pausas cuando el frente y las plantillas lo definen",
+    "para": "evitar solapes de pausas que rompan cobertura si hay reglas",
+    "cubren": [
+      "Distribución asistida de pausas",
+      "Pausas hardcodeadas por frente"
+    ],
+    "reglas": [
+      "Depende de HU13 y reglas de cobertura en franja de pausa."
+    ],
+    "cas": [
+      [
+        "Distribuir",
+        "plantillas con pausas y capacidad on",
+        "ejecuta",
+        "propone horarios de pausa"
+      ],
+      [
+        "Conflicto cobertura",
+        "regla de cobertura en pausa",
+        "evalúa",
+        "hallazgo con severidad"
+      ],
+      [
+        "Off",
+        "sin pausas en plantillas",
+        "acción",
+        "no aplica"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU13, MT-EP01-HU24, MT-EP03-HU51\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP03-HU53",
+    "title": "Rotar sitios de asistencia según configuración",
+    "epic_file": "EP-03-Validacion-Rotacion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "aplicar un patrón o política de rotación de sitios cuando la capacidad está habilitada",
+    "para": "alternar ubicaciones sin reglas fijas por nombre de sitio",
+    "cubren": [
+      "Rotación de sitios parametrizable",
+      "—"
+    ],
+    "reglas": [
+      "Sitios son catálogo; la secuencia es configuración."
+    ],
+    "cas": [
+      [
+        "Aplicar",
+        "capacidad sitio on y patrón de sitios",
+        "simula/aplica",
+        "asigna sitios según secuencia"
+      ],
+      [
+        "Exclusión",
+        "persona excluida",
+        "aplica",
+        "no cambia sitio"
+      ],
+      [
+        "Off",
+        "capacidad off",
+        "acción ausente",
+        "OK"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU18, MT-EP03-HU46, MT-EP03-HU48\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP03-HU54",
+    "title": "Reequilibrar cargas tras una novedad",
+    "epic_file": "EP-03-Validacion-Rotacion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "obtener sugerencias de reasignación cuando una novedad deja huecos de cobertura",
+    "para": "recuperar cobertura sin rearmar toda la malla a ciegas",
+    "cubren": [
+      "Sugerencias post-novedad",
+      "Borrar historial de la novedad"
+    ],
+    "reglas": [
+      "Se dispara tras HU60 según estrategia del frente.",
+      "No hardcodea tipos de novedad."
+    ],
+    "cas": [
+      [
+        "Hueco",
+        "estado no afecta cobertura deja min incumplido",
+        "solicita reequilibrio",
+        "sugiere candidatos"
+      ],
+      [
+        "Aceptar",
+        "elige sugerencia",
+        "aplica",
+        "historial con origen asistido"
+      ],
+      [
+        "Estrategia",
+        "manual sin asistida",
+        "reequilibrio auto",
+        "no disponible o solo aviso"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP05-HU60, MT-EP03-HU51, MT-EP01-HU24\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP03-HU55",
+    "title": "Aplicar restricciones y motor de reglas al rotar o asignar",
+    "epic_file": "EP-03-Validacion-Rotacion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "que toda asignación manual, asistida o automática pase por restricciones de persona y reglas del frente",
+    "para": "impedir propuestas inválidas",
+    "cubren": [
+      "Integración restricciones HU19 + motor HU25 en todos los flujos de escritura",
+      "—"
+    ],
+    "reglas": [
+      "Bloqueo de restricción impide propuesta/guardado.",
+      "Advertencia requiere confirmación cuando la UI lo permita."
+    ],
+    "cas": [
+      [
+        "Bloqueo",
+        "restricción vigente incompatible",
+        "asigna o simula",
+        "no propone/guarda ese turno"
+      ],
+      [
+        "Rotación",
+        "patrón caería en turno prohibido",
+        "simula",
+        "marca conflicto o excluye"
+      ],
+      [
+        "Manual",
+        "mismo control",
+        "guarda celda",
+        "idéntica evaluación"
+      ],
+      [
+        "Tenant",
+        "restricción ajena",
+        "no aplica",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU19, MT-EP01-HU25, MT-EP02-HU30, MT-EP03-HU48\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP03-HU56",
+    "title": "Ajustar manualmente tras rotación o sugerencia",
+    "epic_file": "EP-03-Validacion-Rotacion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "modificar celdas después de una aplicación automática/asistida, dejando trazabilidad de origen manual",
+    "para": "permitir excepciones humanas controladas",
+    "cubren": [
+      "Edición post-aplicación",
+      "Cambio de origen a manual",
+      "Historial",
+      "—"
+    ],
+    "reglas": [
+      "El ajuste manual revalida reglas.",
+      "Si la malla está publicada, aplican políticas HU59."
+    ],
+    "cas": [
+      [
+        "Ajuste",
+        "celda origen automático",
+        "cambia turno",
+        "origen pasa a manual y hay historial"
+      ],
+      [
+        "Regla",
+        "ajuste inválido",
+        "guarda",
+        "aplica severidad"
+      ],
+      [
+        "Publicada",
+        "editabilidad off",
+        "intenta",
+        "niega o exige flujo HU59"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP03-HU50, MT-EP02-HU30, MT-EP05-HU62, MT-EP04-HU59\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP04-HU57",
+    "title": "Ciclo de vida de publicación de la malla",
+    "epic_file": "EP-04-Publicacion.md",
+    "como": "Usuario de la empresa con permiso de publicación según configuración del frente",
+    "quiero": "mover la malla entre borrador, en revisión, publicada y rechazada según la configuración del frente",
+    "para": "controlar cuándo la programación es oficial",
+    "cubren": [
+      "Transiciones de estado",
+      "Validación previa",
+      "Publicar con advertencias si el flag lo permite",
+      "Notificación de publicación",
+      "Versionado completo de malla (no requerido)",
+      "Aceptación del empleado"
+    ],
+    "reglas": [
+      "Estados: Borrador, En revisión (si aplica), Publicada, Rechazada.",
+      "Si constructor/publicador está separado (HU10), el constructor solo envía a revisión.",
+      "No se publica con bloqueos; advertencias requieren confirmación solo si el frente lo permite.",
+      "ex-HU46 absorbida aquí + HU10."
+    ],
+    "cas": [
+      [
+        "Publicar",
+        "borrador sin bloqueos y usuario publicador",
+        "publica",
+        "estado=Publicada y se notifica según HU07"
+      ],
+      [
+        "Revisión",
+        "separación activa",
+        "constructor envía",
+        "pasa a En revisión"
+      ],
+      [
+        "Advertencias",
+        "flag permite y hay advertencias",
+        "confirma",
+        "publica registrando aceptación de advertencias"
+      ],
+      [
+        "Bloqueos",
+        "hay bloqueos",
+        "publica",
+        "rechaza"
+      ],
+      [
+        "Permisos",
+        "no publicador",
+        "publica",
+        "niega"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU10, MT-EP03-HU45, MT-EP00-HU07, MT-EP05-HU63\n- Microservicios / GRH: Malla; notification\n\n---"
+  },
+  {
+    "id": "MT-EP04-HU58",
+    "title": "Rechazar malla en revisión",
+    "epic_file": "EP-04-Publicacion.md",
+    "como": "Usuario de la empresa con permiso de publicación según configuración del frente",
+    "quiero": "rechazar una malla en revisión con motivo y devolverla a borrador",
+    "para": "permitir correcciones antes de publicar",
+    "cubren": [
+      "Rechazo con motivo",
+      "Vuelta a borrador",
+      "Notificación al constructor si aplica",
+      "—"
+    ],
+    "reglas": [
+      "Solo desde En revisión.",
+      "Motivo obligatorio."
+    ],
+    "cas": [
+      [
+        "Rechazo",
+        "malla en revisión",
+        "rechaza con motivo",
+        "queda borrador y motivo visible"
+      ],
+      [
+        "Sin motivo",
+        "rechaza vacío",
+        "valida",
+        "bloquea"
+      ],
+      [
+        "Estado inválido",
+        "ya publicada",
+        "rechaza",
+        "niega"
+      ],
+      [
+        "Permisos",
+        "no autorizado",
+        "niega",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP04-HU57\n- Microservicios / GRH: Malla; notification\n\n---"
+  },
+  {
+    "id": "MT-EP04-HU59",
+    "title": "Editar malla publicada",
+    "epic_file": "EP-04-Publicacion.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "modificar celdas de una malla publicada cuando la configuración lo permite, con motivo e historial",
+    "para": "atender cambios reales sin perder trazabilidad",
+    "cubren": [
+      "Edición post-publicación gobernada",
+      "Motivo según config",
+      "Historial + notificación",
+      "Crear nueva versión completa de malla"
+    ],
+    "reglas": [
+      "Si editabilidad post-publicación = no, solo novedades vía flujo permitido o nada.",
+      "Cada cambio deja historial inmutable.",
+      "Estado puede marcarse como modificada después de publicar a nivel de celda/malla según diseño."
+    ],
+    "cas": [
+      [
+        "Edición permitida",
+        "flag on",
+        "cambia celda con motivo",
+        "persiste, historial y notifica si corresponde"
+      ],
+      [
+        "Flag off",
+        "no editable",
+        "intenta",
+        "niega"
+      ],
+      [
+        "Motivo",
+        "config exige motivo",
+        "guarda sin motivo",
+        "bloquea"
+      ],
+      [
+        "Concurrencia",
+        "versión vieja",
+        "guarda",
+        "conflicto HU39"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU10, MT-EP05-HU62, MT-EP05-HU63, MT-EP02-HU39\n- Microservicios / GRH: Malla; notification\n\n---"
+  },
+  {
+    "id": "MT-EP05-HU60",
+    "title": "Aplicar estado de novedad operativa a la celda",
+    "epic_file": "EP-05-Novedades-Historial.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "cambiar el estado de una celda a un estado de novedad del catálogo (vacaciones, incapacidad u otros ítems)",
+    "para": "reflejar la disponibilidad real sin inventar un módulo TH inexistente",
+    "cubren": [
+      "Cambio de estado a ítems del catálogo HU14",
+      "Motivo/soporte según flags",
+      "Recálculo cobertura/horas",
+      "Módulo completo de vacaciones GRH",
+      "HUs por cada tipo de novedad"
+    ],
+    "reglas": [
+      "Ownership MVP: la novedad operativa vive como estado de celda (HU61).",
+      "No existen estados especiales en código; solo flags.",
+      "ex-HU50 absorbida: si el estado no cuenta horas, HU70 no las suma."
+    ],
+    "cas": [
+      [
+        "Aplicar",
+        "estado novedad del catálogo",
+        "asigna a celda",
+        "flags determinan cobertura/horas/notificación"
+      ],
+      [
+        "Motivo",
+        "requiere motivo",
+        "sin motivo",
+        "bloquea/advierte"
+      ],
+      [
+        "Publicada",
+        "políticas HU59",
+        "aplica",
+        "historial + posible notificación"
+      ],
+      [
+        "Sin hardcode",
+        "cualquier código de estado",
+        "mismo flujo",
+        "OK"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU14, MT-EP05-HU61, MT-EP04-HU59, MT-EP05-HU62\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP05-HU61",
+    "title": "Definir ownership MVP de novedades",
+    "epic_file": "EP-05-Novedades-Historial.md",
+    "como": "Usuario de la empresa con permiso de parametrización",
+    "quiero": "operar novedades como estado de celda con importación opcional, dejando explícito que no hay módulo TH en GRH hoy",
+    "para": "evitar dobles fuentes de verdad no gobernadas",
+    "cubren": [
+      "Política MVP documentada e implementada",
+      "Importación opcional (HU74/HU75)",
+      "Extensibilidad a conector futuro",
+      "Afirmar que GRH ya tiene vacaciones/incapacidades"
+    ],
+    "reglas": [
+      "Fuente operativa MVP = estado de celda.",
+      "Archivo TH es complemento de cruce, no reemplaza el catálogo de estados.",
+      "Futuro conector TH no debe romper historial de celda."
+    ],
+    "cas": [
+      [
+        "MVP",
+        "se aplica novedad",
+        "persiste",
+        "como estado de celda"
+      ],
+      [
+        "Import",
+        "existe archivo",
+        "importa",
+        "propone/aplica estados según mapeo"
+      ],
+      [
+        "Sin módulo TH",
+        "documentación/producto",
+        "consulta capacidades GRH",
+        "no asume módulo TH"
+      ],
+      [
+        "Tenant",
+        "import",
+        "empresa del usuario",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU14, MT-EP08-HU74\n- Microservicios / GRH: Malla"
+  },
+  {
+    "id": "MT-EP05-HU62",
+    "title": "Historial inmutable de celda",
+    "epic_file": "EP-05-Novedades-Historial.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "registrar de forma append-only cada cambio de celda con antes, después, usuario, fecha, motivo y origen",
+    "para": "auditar la operación sin versionar toda la malla",
+    "cubren": [
+      "Historial por celda",
+      "Orígenes: manual, automático, asistido, novedad, intercambio, import",
+      "Borrado de historial",
+      "Duplicar timeline GRH con el mismo detalle"
+    ],
+    "reglas": [
+      "El historial de dominio es la fuente del detalle de celda.",
+      "Timeline GRH guarda hechos de alto nivel (HU07).",
+      "Inmutable: no update/delete de eventos de historial."
+    ],
+    "cas": [
+      [
+        "Registro",
+        "cambia celda",
+        "guarda OK",
+        "existe evento con antes/después/usuario/origen"
+      ],
+      [
+        "Inmutable",
+        "intenta borrar historial",
+        "acción",
+        "no existe o se niega"
+      ],
+      [
+        "Origen intercambio",
+        "cambio por HU81",
+        "historial",
+        "referencia solicitud"
+      ],
+      [
+        "Consulta",
+        "usuario autorizado",
+        "abre historial celda",
+        "lista cronológica"
+      ],
+      [
+        "Tenant",
+        "historial ajeno",
+        "invisible",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP02-HU30, MT-EP00-HU07\n- Microservicios / GRH: Malla; audit timeline (alto nivel)\n\n---"
+  },
+  {
+    "id": "MT-EP05-HU63",
+    "title": "Notificar cambio relevante al empleado",
+    "epic_file": "EP-05-Novedades-Historial.md",
+    "como": "Usuario de la empresa vinculado a un funcionario",
+    "quiero": "recibir notificación informativa cuando cambia su programación publicada según flags y event types",
+    "para": "enterarse del cambio sin tener que aceptar en la plataforma",
+    "cubren": [
+      "Despacho notification-service",
+      "Popup/email según event type",
+      "Sin aceptación",
+      "Workflow de aceptación del empleado",
+      "Mailer propio"
+    ],
+    "reglas": [
+      "Si el estado/config indica notifica=sí y la malla está en alcance de notificación, se despacha.",
+      "Idempotencia por clave de evento."
+    ],
+    "cas": [
+      [
+        "Cambio",
+        "celda publicada cambia y notifica=sí",
+        "guarda",
+        "empleado recibe notificación"
+      ],
+      [
+        "Sin aceptación",
+        "recibe aviso",
+        "abre app",
+        "no se le pide aceptar el turno"
+      ],
+      [
+        "No notifica",
+        "flag notifica=no",
+        "cambia",
+        "no despacha a empleado"
+      ],
+      [
+        "Falla canal",
+        "email falla",
+        "reintento idempotente",
+        "no duplica popup si ya entregado según diseño del MS"
+      ],
+      [
+        "Tenant",
+        "destinatario",
+        "misma empresa",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP00-HU07, MT-EP01-HU14, MT-EP04-HU59\n- Microservicios / GRH: notification-service\n\n---"
+  },
+  {
+    "id": "MT-EP05-HU64",
+    "title": "Consultar historial de cambios por funcionario",
+    "epic_file": "EP-05-Novedades-Historial.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "ver el historial de cambios de celdas de un funcionario en un rango de fechas",
+    "para": "investigar novedades y ajustes",
+    "cubren": [
+      "Consulta por persona + rango",
+      "Detalle de eventos HU62",
+      "—"
+    ],
+    "reglas": [
+      "Respeta alcance de frente y permisos LEER."
+    ],
+    "cas": [
+      [
+        "Consulta",
+        "persona de la empresa",
+        "filtra fechas",
+        "lista cambios"
+      ],
+      [
+        "Vacío",
+        "sin cambios",
+        "consulta",
+        "estado vacío claro"
+      ],
+      [
+        "Permisos",
+        "sin LEER",
+        "niega",
+        "OK"
+      ],
+      [
+        "Tenant",
+        "persona otra empresa",
+        "niega",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP05-HU62\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP06-HU65",
+    "title": "Buscar quién está en turno o disponible",
+    "epic_file": "EP-06-Consulta-Operativa.md",
+    "como": "Usuario de la empresa con permiso de consulta operativa",
+    "quiero": "consultar qué personas están en turno o disponibles en una fecha/franja según filtros del frente",
+    "para": "atender operación en tiempo real",
+    "cubren": [
+      "Búsqueda por fecha/franja/filtros habilitados",
+      "Excluye estados no disponibles según flags",
+      "Hardcodear estado Actividad",
+      "Edición de malla"
+    ],
+    "reglas": [
+      "ex-HU54 absorbida: la no asignabilidad a casos es un flag del estado.",
+      "Solo muestra frentes de su alcance."
+    ],
+    "cas": [
+      [
+        "Búsqueda",
+        "hay personas en turno en la franja",
+        "consulta",
+        "lista resultados"
+      ],
+      [
+        "Flag",
+        "estado no disponible/no asignable",
+        "consulta disponibilidad operativa",
+        "no las incluye"
+      ],
+      [
+        "Filtros",
+        "capacidades off",
+        "UI",
+        "no muestra filtros fantasma"
+      ],
+      [
+        "Tenant/alcance",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU14, MT-EP00-HU03\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP06-HU66",
+    "title": "Consultar cobertura del día por dimensiones habilitadas",
+    "epic_file": "EP-06-Consulta-Operativa.md",
+    "como": "Usuario de la empresa con permiso de consulta operativa",
+    "quiero": "ver cobertura del día agrupada por las dimensiones activas del frente",
+    "para": "verificar dotación operativa",
+    "cubren": [
+      "Vista de cobertura del día",
+      "Comparación vs min/max",
+      "—"
+    ],
+    "reglas": [
+      "Dimensiones dinámicas según HU10/HU24."
+    ],
+    "cas": [
+      [
+        "Vista",
+        "día con reglas",
+        "abre cobertura",
+        "muestra actual vs min/max"
+      ],
+      [
+        "Dimensión",
+        "territorio off",
+        "vista",
+        "sin agrupación territorio"
+      ],
+      [
+        "Permisos",
+        "LEER consulta",
+        "OK",
+        "OK"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU24, MT-EP03-HU43\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP07-HU67",
+    "title": "Ver programación del grupo",
+    "epic_file": "EP-07-Vista-Empleado.md",
+    "como": "Usuario de la empresa vinculado a un funcionario",
+    "quiero": "consultar la programación publicada del grupo según la política de visibilidad del frente",
+    "para": "conocer turnos del equipo",
+    "cubren": [
+      "Vista de grupo",
+      "Solo lectura",
+      "Editar malla ajena"
+    ],
+    "reglas": [
+      "Default: visible dentro del grupo del frente (D3).",
+      "Si config restringe a solo-propia, no ve compañeros."
+    ],
+    "cas": [
+      [
+        "Grupo visible",
+        "política pública en grupo",
+        "abre",
+        "ve compañeros del grupo"
+      ],
+      [
+        "Restringida",
+        "política solo propia",
+        "abre",
+        "solo su fila"
+      ],
+      [
+        "Borrador",
+        "malla no publicada",
+        "consulta empleado",
+        "no ve borradores ajenos"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP04-HU57, MT-EP01-HU10\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP07-HU68",
+    "title": "Ver mi programación",
+    "epic_file": "EP-07-Vista-Empleado.md",
+    "como": "Usuario de la empresa vinculado a un funcionario",
+    "quiero": "ver mi programación en vistas de día, semana y mes",
+    "para": "organizar mi trabajo",
+    "cubren": [
+      "Vistas temporales",
+      "Turnos/estados/atributos visibles permitidos",
+      "Solo lectura salvo intercambio si está on",
+      "—"
+    ],
+    "reglas": [
+      "No edita celdas salvo iniciar solicitud EP-09 si está habilitado."
+    ],
+    "cas": [
+      [
+        "Día/semana/mes",
+        "tiene celdas publicadas",
+        "cambia vista",
+        "ve su información"
+      ],
+      [
+        "Atributos",
+        "frente sin campaña",
+        "vista",
+        "no muestra campaña"
+      ],
+      [
+        "Borrador",
+        "solo borrador",
+        "consulta",
+        "no lo ve como oficial"
+      ],
+      [
+        "Permisos",
+        "usuario sin vínculo empleado",
+        "abre",
+        "mensaje claro"
+      ]
+    ],
+    "deps": "- HUs: MT-EP04-HU57\n- Microservicios / GRH: Malla; employee vínculo userId\n\n---"
+  },
+  {
+    "id": "MT-EP07-HU69",
+    "title": "Ver historial de mis turnos y cambios recientes",
+    "epic_file": "EP-07-Vista-Empleado.md",
+    "como": "Usuario de la empresa vinculado a un funcionario",
+    "quiero": "consultar el historial de mis turnos y cambios recientes que me afectaron",
+    "para": "entender modificaciones de mi programación",
+    "cubren": [
+      "Historial propio",
+      "Cambios recientes",
+      "Historial de otros empleados"
+    ],
+    "reglas": [
+      "Solo sus eventos; inmutable."
+    ],
+    "cas": [
+      [
+        "Historial",
+        "hubo cambios",
+        "abre",
+        "lista antes/después relevantes"
+      ],
+      [
+        "Recientes",
+        "filtro recientes",
+        "aplica",
+        "acota ventana"
+      ],
+      [
+        "Privacidad",
+        "otro empleado",
+        "intenta",
+        "niega"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP05-HU62\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP08-HU70",
+    "title": "Calcular horas del periodo por tipos configurados",
+    "epic_file": "EP-08-Reportes-Horas.md",
+    "como": "Usuario de la empresa con permiso de reportes",
+    "quiero": "calcular horas del periodo clasificadas por tipos de hora y afectadas por flags de estado",
+    "para": "entregar información de horas a nómina sin liquidar dinero",
+    "cubren": [
+      "Cálculo por persona/periodo/corte",
+      "Clasificación HU22",
+      "Respeto flags HU14",
+      "Cálculo de pesos",
+      "Constante 42h"
+    ],
+    "reglas": [
+      "Los topes de horas son reglas HU25, no constantes.",
+      "Salida = cantidades de hora por tipo, nunca montos."
+    ],
+    "cas": [
+      [
+        "Cálculo",
+        "malla con turnos",
+        "ejecuta",
+        "obtiene horas por tipo"
+      ],
+      [
+        "Estado no suma",
+        "flag off",
+        "calcula",
+        "excluye esas celdas del tipo afectado"
+      ],
+      [
+        "Festivo",
+        "día festivo y regla festiva",
+        "clasifica",
+        "según HU22"
+      ],
+      [
+        "Sin dinero",
+        "salida",
+        "inspecciona",
+        "sin campos monetarios"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU22, MT-EP01-HU14, MT-EP01-HU21, MT-EP01-HU20\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP08-HU71",
+    "title": "Exportar malla a Excel o PDF",
+    "epic_file": "EP-08-Reportes-Horas.md",
+    "como": "Usuario de la empresa con permiso de reportes",
+    "quiero": "exportar la malla (ventana o periodo) a Excel y/o PDF según capacidad",
+    "para": "compartir la programación fuera de la grilla",
+    "cubren": [
+      "Export Excel/PDF",
+      "Respeta alcance y tenant",
+      "Export = fuente de verdad editable que reimporta sin control"
+    ],
+    "reglas": [
+      "Export incluye solo atributos habilitados.",
+      "No incluye datos de otras empresas."
+    ],
+    "cas": [
+      [
+        "Excel",
+        "malla publicada o autorizada",
+        "exporta",
+        "archivo con filas/columnas coherentes"
+      ],
+      [
+        "PDF",
+        "capacidad PDF on",
+        "exporta",
+        "documento legible"
+      ],
+      [
+        "Alcance",
+        "usuario frente A",
+        "exporta",
+        "solo A"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP02-HU35\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP08-HU72",
+    "title": "Reportar horas de novedad versus operativas",
+    "epic_file": "EP-08-Reportes-Horas.md",
+    "como": "Usuario de la empresa con permiso de reportes",
+    "quiero": "distinguir horas asociadas a estados de novedad frente a horas operativas según flags",
+    "para": "analizar no disponibilidad vs operación",
+    "cubren": [
+      "Desglose por flags de estado",
+      "—"
+    ],
+    "reglas": [
+      "No asume lista fija de novedades; usa flags del catálogo."
+    ],
+    "cas": [
+      [
+        "Desglose",
+        "hay estados novedad y operativos",
+        "reporte",
+        "separa totales"
+      ],
+      [
+        "Flag",
+        "estado marca no operativa",
+        "clasifica",
+        "va a novedad"
+      ],
+      [
+        "Permisos",
+        "reportes",
+        "OK",
+        "OK"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP08-HU70, MT-EP01-HU14\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP08-HU73",
+    "title": "Exportar cobertura para terceros",
+    "epic_file": "EP-08-Reportes-Horas.md",
+    "como": "Usuario de la empresa con permiso de reportes",
+    "quiero": "generar exportación de cobertura consumible por terceros sin obligar altas de usuario GRH",
+    "para": "compartir dotación con proveedores o clientes internos",
+    "cubren": [
+      "Export específico de cobertura",
+      "Entrega archivo/link controlado",
+      "Crear usuarios GRH para cada tercero como único medio"
+    ],
+    "reglas": [
+      "La habilitación y formato son configuración.",
+      "Sigue siendo tenant-scoped."
+    ],
+    "cas": [
+      [
+        "Export",
+        "capacidad on",
+        "genera",
+        "archivo de cobertura del alcance"
+      ],
+      [
+        "Sin usuario tercero",
+        "no existe usuario GRH del tercero",
+        "un autorizado genera el archivo",
+        "el tercero consume el archivo sin usuario GRH obligatorio"
+      ],
+      [
+        "Permisos",
+        "solo roles autorizados",
+        "OK",
+        "OK"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP06-HU66, MT-EP01-HU10\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP08-HU74",
+    "title": "Parametrizar plantilla de importación de novedades TH",
+    "epic_file": "EP-08-Reportes-Horas.md",
+    "como": "Usuario de la empresa con permiso de parametrización",
+    "quiero": "definir el mapeo de columnas de un archivo de novedades TH a estados y personas",
+    "para": "cruzar información externa sin rigidizar un formato único en código",
+    "cubren": [
+      "Plantilla de importación por empresa",
+      "Mapeo columnas→campos",
+      "Validación",
+      "Asumir formato fijo nacional"
+    ],
+    "reglas": [
+      "Plantilla parametrizable; seeds de ejemplo opcionales."
+    ],
+    "cas": [
+      [
+        "Mapeo",
+        "define columnas",
+        "guarda plantilla",
+        "queda activa para la empresa"
+      ],
+      [
+        "Validación",
+        "archivo sin columna obligatoria",
+        "importa",
+        "rechaza con error claro"
+      ],
+      [
+        "Tenant",
+        "plantilla",
+        "propia",
+        "OK"
+      ],
+      [
+        "Extensible",
+        "nueva columna",
+        "se agrega al mapeo",
+        "sin deploy de regla fija"
+      ]
+    ],
+    "deps": "- HUs: MT-EP05-HU61, MT-EP01-HU14\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP08-HU75",
+    "title": "Cruzar programación con novedades TH importadas",
+    "epic_file": "EP-08-Reportes-Horas.md",
+    "como": "Usuario de la empresa con permiso de reportes",
+    "quiero": "cruzar la malla con un archivo de novedades importado según la plantilla y producir diferencias",
+    "para": "detectar inconsistencias entre operación y TH",
+    "cubren": [
+      "Import + cruce + reporte de diferencias",
+      "Opción de aplicar estados con confirmación",
+      "Sobrescribir silenciosa masiva"
+    ],
+    "reglas": [
+      "Cruce no borra historial.",
+      "Aplicar cambios exige permiso y deja origen=import."
+    ],
+    "cas": [
+      [
+        "Cruce",
+        "archivo válido y malla",
+        "ejecuta",
+        "lista coincidencias/diferencias"
+      ],
+      [
+        "Aplicar",
+        "confirma diferencias",
+        "aplica",
+        "celdas actualizadas + historial"
+      ],
+      [
+        "Error formato",
+        "archivo inválido",
+        "rechaza",
+        "sin cambios"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP08-HU74, MT-EP05-HU60, MT-EP05-HU62\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP08-HU76",
+    "title": "Aplicar reglas de compensatorio en reporte",
+    "epic_file": "EP-08-Reportes-Horas.md",
+    "como": "Usuario de la empresa con permiso de reportes",
+    "quiero": "evaluar las reglas de compensatorio configuradas y mostrar sugerencias o marcas en el reporte de horas",
+    "para": "soportar políticas distintas sin umbrales fijos en código",
+    "cubren": [
+      "Evaluación HU23 sobre periodo",
+      "Salida en reporte",
+      "Regla fija de tres domingos"
+    ],
+    "reglas": [
+      "Umbrales y tipos de día salen de HU23."
+    ],
+    "cas": [
+      [
+        "Eval",
+        "regla activa cumplida",
+        "reporte",
+        "marca/sugiere según acción"
+      ],
+      [
+        "No cumple",
+        "umbral no alcanzado",
+        "sin marca",
+        "OK"
+      ],
+      [
+        "Por frente",
+        "reglas distintas",
+        "cada frente",
+        "su resultado"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU23, MT-EP08-HU70\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP09-HU77",
+    "title": "Habilitar y configurar solicitudes de intercambio",
+    "epic_file": "EP-09-Intercambio.md",
+    "como": "Usuario de la empresa con permiso de parametrización",
+    "quiero": "activar o desactivar solicitudes de intercambio por empresa/frente y definir anticipación, quién solicita, quién aprueba, límites y notificaciones",
+    "para": "gobernar el intercambio sin imponerlo a todos los frentes",
+    "cubren": [
+      "Config on/off",
+      "Anticipación mínima",
+      "Roles/permisos lógicos de solicitud y aprobación",
+      "Límites de cantidad",
+      "Motivos",
+      "Flujo de solicitud en sí (HU78+)"
+    ],
+    "reglas": [
+      "Default: deshabilitado.",
+      "Toda regla numérica es parámetro.",
+      "No cruza empresas."
+    ],
+    "cas": [
+      [
+        "Off",
+        "deshabilitado",
+        "empleado ve su malla",
+        "sin acción de intercambio"
+      ],
+      [
+        "On",
+        "habilitado",
+        "aparece acción",
+        "según quién puede solicitar"
+      ],
+      [
+        "Anticipación",
+        "parámetro N días",
+        "solicitud fuera de N",
+        "rechazada por regla"
+      ],
+      [
+        "Auditoría config",
+        "cambia config",
+        "historial config",
+        "OK"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU10, MT-EP00-HU02\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP09-HU78",
+    "title": "Solicitar intercambio de celda o turno",
+    "epic_file": "EP-09-Intercambio.md",
+    "como": "Usuario de la empresa vinculado a un funcionario",
+    "quiero": "iniciar una solicitud de intercambio eligiendo mi celda y un compañero candidato con su celda",
+    "para": "resolver cambios de turno dentro de la plataforma",
+    "cubren": [
+      "Creación de solicitud pendiente",
+      "Selección de contraparte misma empresa/frente según config",
+      "Autoaprobar"
+    ],
+    "reglas": [
+      "Solo si HU77 enabled.",
+      "Ambos empleados misma empresa; frente según config.",
+      "No modifica malla hasta aprobación+aplicación."
+    ],
+    "cas": [
+      [
+        "Solicitud",
+        "intercambio on y celdas elegibles",
+        "envía",
+        "queda pendiente"
+      ],
+      [
+        "Misma empresa",
+        "candidato otra empresa",
+        "selección",
+        "imposible"
+      ],
+      [
+        "Off",
+        "config off",
+        "acción",
+        "ausente"
+      ],
+      [
+        "Límite",
+        "supera cantidad configurada",
+        "envía",
+        "rechaza"
+      ],
+      [
+        "Permisos",
+        "no habilitado a solicitar",
+        "niega",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP09-HU77, MT-EP07-HU68\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP09-HU79",
+    "title": "Validar solicitud con motor de reglas",
+    "epic_file": "EP-09-Intercambio.md",
+    "como": "Usuario de la empresa vinculado a un funcionario",
+    "quiero": "que el sistema valide anticipación, solape, cobertura, horas, restricciones y demás reglas al crear o aprobar",
+    "para": "evitar intercambios que rompan la operación",
+    "cubren": [
+      "Validación en creación y en aprobación",
+      "—"
+    ],
+    "reglas": [
+      "Solape real = bloqueo.",
+      "Resto según HU25 + config HU77."
+    ],
+    "cas": [
+      [
+        "Creación inválida",
+        "viola bloqueo",
+        "crea",
+        "rechaza con motivos"
+      ],
+      [
+        "Advertencia",
+        "severidad advertencia",
+        "crea",
+        "queda pendiente con warnings visibles al aprobador"
+      ],
+      [
+        "Revalidar",
+        "entre creación y aprobación cambió malla",
+        "aprueba",
+        "revalida y puede fallar"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP01-HU25, MT-EP09-HU78\n- Microservicios / GRH: Malla\n\n---"
+  },
+  {
+    "id": "MT-EP09-HU80",
+    "title": "Aprobar o rechazar solicitud de intercambio",
+    "epic_file": "EP-09-Intercambio.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "aprobar o rechazar solicitudes pendientes según la configuración de aprobadores",
+    "para": "gobernar el cambio con responsabilidad clara",
+    "cubren": [
+      "Bandeja de solicitudes",
+      "Aprobar/rechazar con motivo",
+      "N niveles si config lo define (mínimo 1)",
+      "Aplicar sin pasar por este paso"
+    ],
+    "reglas": [
+      "Quién aprueba lo define HU77 + permisos, no un rol quemado.",
+      "Rechazo no cambia malla."
+    ],
+    "cas": [
+      [
+        "Aprobar",
+        "solicitud válida y usuario aprobador",
+        "aprueba",
+        "pasa a aprobada pendiente de aplicación o aplica según diseño"
+      ],
+      [
+        "Rechazar",
+        "con motivo",
+        "rechaza",
+        "malla intacta + notificación"
+      ],
+      [
+        "No aprobador",
+        "usuario sin permiso",
+        "intenta",
+        "niega"
+      ],
+      [
+        "Revalidación",
+        "ya no es válida",
+        "aprueba",
+        "falla con motivos"
+      ],
+      [
+        "Tenant",
+        "OK",
+        "OK",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP09-HU77, MT-EP09-HU79, MT-EP00-HU07\n- Microservicios / GRH: Malla; notification\n\n---"
+  },
+  {
+    "id": "MT-EP09-HU81",
+    "title": "Aplicar intercambio, auditar y notificar",
+    "epic_file": "EP-09-Intercambio.md",
+    "como": "Usuario de la empresa con permiso de construcción de malla",
+    "quiero": "aplicar el intercambio aprobado sobre las celdas, registrar historial con origen intercambio y notificar a afectados",
+    "para": "cerrar el ciclo de forma trazable",
+    "cubren": [
+      "Swap atómico de atributos configurados",
+      "Historial",
+      "Notificaciones",
+      "Idempotencia",
+      "—"
+    ],
+    "reglas": [
+      "Aplicación atómica: ambas celdas o ninguna.",
+      "Historial referencia id de solicitud.",
+      "Origen=intercambio."
+    ],
+    "cas": [
+      [
+        "Aplicar",
+        "aprobada y válida",
+        "aplica",
+        "celdas intercambiadas"
+      ],
+      [
+        "Historial",
+        "consulta",
+        "ambas celdas",
+        "eventos con solicitud"
+      ],
+      [
+        "Notificar",
+        "ambos empleados",
+        "reciben aviso",
+        "sin aceptación adicional"
+      ],
+      [
+        "Falla parcial",
+        "segunda celda conflicto versión",
+        "rollback",
+        "nada aplicado + error"
+      ],
+      [
+        "Idempotencia",
+        "reintenta misma solicitud aplicada",
+        "no duplica swap",
+        "OK"
+      ]
+    ],
+    "deps": "- HUs: MT-EP09-HU80, MT-EP05-HU62, MT-EP00-HU07, MT-EP02-HU39\n- Microservicios / GRH: Malla; notification\n\n---"
+  }
+]
