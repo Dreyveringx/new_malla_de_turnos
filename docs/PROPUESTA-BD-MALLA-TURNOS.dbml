@@ -1,0 +1,456 @@
+// Propuesta BD — Malla de Turnos (ms_malla_turnos)
+// Post sesion stakeholder 11-sep-2026
+// IDs externos GRH = UUID logicos SIN FK cross-database
+// Pegar en https://dbdiagram.io
+
+Project malla_turnos {
+  database_type: 'PostgreSQL'
+  Note: 'BD nueva ms_malla_turnos. Tenant=company_id. Integracion GRH por UUID logicos.'
+}
+
+Table operational_front {
+  id uuid [pk]
+  company_id uuid [not null, note: 'Tenant GRH (logico)']
+  code varchar(20) [not null]
+  name varchar(120) [not null]
+  description text
+  builder_profile_label varchar(120)
+  publisher_profile_label varchar(120)
+  separate_builder_publisher boolean [not null, default: false]
+  build_mode varchar(20) [not null, note: 'manual|asistido|automatico']
+  period_type varchar(10) [not null, note: 'semana|quincena|mes']
+  published_editable boolean [not null, default: false]
+  swap_enabled boolean [not null, default: false, note: 'Sin tope mensual solicitudes #16']
+  active boolean [not null, default: true]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  created_by uuid [note: 'ms_auth user_id logico']
+  updated_by uuid
+  Indexes {
+    (company_id, code) [unique]
+  }
+}
+
+Table front_capability {
+  id uuid [pk]
+  company_id uuid [not null]
+  front_id uuid [not null, ref: > operational_front.id]
+  capability_code varchar(40) [not null, note: 'usa_territorio|usa_campanas|usa_modalidad|usa_sitio|usa_multi_break|usa_multi_zona']
+  enabled boolean [not null, default: false]
+  config_json jsonb
+  Indexes {
+    (company_id, front_id, capability_code) [unique]
+  }
+}
+
+Table front_area_link {
+  id uuid [pk]
+  company_id uuid [not null]
+  front_id uuid [not null, ref: > operational_front.id]
+  area_id uuid [not null, note: 'ms_parametrization area_id logico']
+  Indexes {
+    (company_id, front_id, area_id) [unique]
+  }
+}
+
+Table front_user_scope {
+  id uuid [pk]
+  company_id uuid [not null]
+  front_id uuid [not null, ref: > operational_front.id]
+  user_id uuid [not null, note: 'ms_auth user_id logico']
+  Indexes {
+    (company_id, front_id, user_id) [unique]
+  }
+}
+
+Table front_role_scope {
+  id uuid [pk]
+  company_id uuid [not null]
+  front_id uuid [not null, ref: > operational_front.id]
+  role_id uuid [not null, note: 'ms_auth role_id logico']
+  Indexes {
+    (company_id, front_id, role_id) [unique]
+  }
+}
+
+Table catalog_code_sequence {
+  id uuid [pk]
+  company_id uuid [not null]
+  catalog_type varchar(40) [not null]
+  prefix varchar(10)
+  next_value int [not null, default: 1]
+  Indexes {
+    (company_id, catalog_type) [unique]
+  }
+  Note: 'Codigos auto-consecutivos #3. Sitios pueden ser manual.'
+}
+
+Table shift_template {
+  id uuid [pk]
+  company_id uuid [not null]
+  code varchar(20) [not null]
+  name varchar(120) [not null]
+  start_time time [not null]
+  end_time time [not null]
+  crosses_midnight boolean [not null, default: false]
+  color_hex varchar(7)
+  net_hours numeric(5,2)
+  multi_break_enabled boolean [not null, default: false, note: '#11']
+  active boolean [not null, default: true]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  Indexes {
+    (company_id, code) [unique]
+  }
+  Note: 'Catalogo unico. Un turno = un horario; la zona no cambia el turno.'
+}
+
+Table shift_template_front {
+  id uuid [pk]
+  company_id uuid [not null]
+  shift_template_id uuid [not null, ref: > shift_template.id]
+  front_id uuid [not null, ref: > operational_front.id]
+  Indexes {
+    (company_id, shift_template_id, front_id) [unique]
+  }
+}
+
+Table shift_template_day_schedule {
+  id uuid [pk]
+  company_id uuid [not null]
+  shift_template_id uuid [not null, ref: > shift_template.id]
+  dow smallint [not null]
+  start_time time [not null]
+  end_time time [not null]
+  crosses_midnight boolean [not null, default: false]
+  Indexes {
+    (shift_template_id, dow) [unique]
+  }
+}
+
+Table shift_template_break {
+  id uuid [pk]
+  company_id uuid [not null]
+  shift_template_id uuid [not null, ref: > shift_template.id]
+  code varchar(20)
+  label varchar(80) [not null]
+  duration_minutes int [not null]
+  paid boolean [not null, default: false]
+  sort_order smallint [not null, default: 0]
+  active boolean [not null, default: true]
+}
+
+Table cell_state {
+  id uuid [pk]
+  company_id uuid [not null]
+  code varchar(20) [not null]
+  name varchar(120) [not null]
+  color_hex varchar(7)
+  assignable boolean [not null, default: true]
+  counts_hours boolean [not null, default: false]
+  deducts_productive boolean [not null, default: false]
+  requires_support boolean [not null, default: false]
+  active boolean [not null, default: true]
+  Indexes {
+    (company_id, code) [unique]
+  }
+}
+
+Table work_modality {
+  id uuid [pk]
+  company_id uuid [not null]
+  code varchar(20) [not null]
+  name varchar(120) [not null]
+  icon varchar(40)
+  active boolean [not null, default: true]
+  Indexes {
+    (company_id, code) [unique]
+  }
+  Note: '#2 Catalogo GLOBAL. No hay tabla modality_front.'
+}
+
+Table attendance_site {
+  id uuid [pk]
+  company_id uuid [not null]
+  code varchar(20) [not null, note: 'Puede ser manual codigo negocio #3']
+  name varchar(120) [not null]
+  site_type varchar(40)
+  address varchar(255)
+  active boolean [not null, default: true]
+  Indexes {
+    (company_id, code) [unique]
+  }
+}
+
+Table attendance_site_front {
+  id uuid [pk]
+  company_id uuid [not null]
+  site_id uuid [not null, ref: > attendance_site.id]
+  front_id uuid [not null, ref: > operational_front.id]
+  Indexes {
+    (company_id, site_id, front_id) [unique]
+  }
+}
+
+Table campaign {
+  id uuid [pk]
+  company_id uuid [not null]
+  code varchar(20) [not null]
+  name varchar(120) [not null]
+  front_id uuid [ref: > operational_front.id]
+  valid_from date
+  valid_to date
+  active boolean [not null, default: true]
+  Indexes {
+    (company_id, code) [unique]
+  }
+  Note: 'No se asigna en paso 1 de crear malla #17; va en celda.'
+}
+
+Table territory_level {
+  id uuid [pk]
+  company_id uuid [not null]
+  level_order smallint [not null]
+  name varchar(80) [not null]
+  Indexes {
+    (company_id, level_order) [unique]
+  }
+}
+
+Table territory_node {
+  id uuid [pk]
+  company_id uuid [not null]
+  level_id uuid [not null, ref: > territory_level.id]
+  parent_id uuid [ref: > territory_node.id]
+  code varchar(20) [not null]
+  name varchar(120) [not null]
+  active boolean [not null, default: true]
+  Indexes {
+    (company_id, code) [unique]
+  }
+}
+
+Table validation_rule {
+  id uuid [pk]
+  company_id uuid [not null]
+  code varchar(40) [not null]
+  scope varchar(20) [not null, note: 'empresa|frente']
+  front_id uuid [ref: > operational_front.id]
+  param_value varchar(40)
+  param_unit varchar(40)
+  severity varchar(20) [not null]
+  priority int [not null, default: 100]
+  active boolean [not null, default: true]
+  notes text
+  Note: 'Reglas internas sin pantallas de cobertura/compensatorio #4 #5'
+}
+
+Table hour_classification_band {
+  id uuid [pk]
+  company_id uuid [not null]
+  code varchar(20) [not null]
+  name varchar(120) [not null]
+  band_type varchar(40) [not null]
+  start_time time
+  end_time time
+  crosses_midnight boolean [not null, default: false]
+  applies_sunday boolean [not null, default: false]
+  applies_holiday boolean [not null, default: false]
+  sort_order smallint [not null, default: 0]
+  active boolean [not null, default: true]
+  Indexes {
+    (company_id, code) [unique]
+  }
+  Note: 'Franjas recargo #8. Festivos por API parametrization.'
+}
+
+Table rotation_pattern {
+  id uuid [pk]
+  company_id uuid [not null]
+  front_id uuid [not null, ref: > operational_front.id]
+  code varchar(20) [not null]
+  name varchar(120) [not null]
+  cycle_length smallint [not null]
+  auto_apply_on_period_close boolean [not null, default: true, note: '#12']
+  active boolean [not null, default: true]
+}
+
+Table rotation_pattern_step {
+  id uuid [pk]
+  company_id uuid [not null]
+  pattern_id uuid [not null, ref: > rotation_pattern.id]
+  step_order smallint [not null]
+  shift_template_id uuid [ref: > shift_template.id]
+  cell_state_id uuid [ref: > cell_state.id]
+}
+
+Table schedule_grid {
+  id uuid [pk]
+  company_id uuid [not null]
+  front_id uuid [not null, ref: > operational_front.id]
+  name varchar(160)
+  period_start date [not null]
+  period_end date [not null]
+  period_type varchar(10) [not null]
+  status varchar(20) [not null, note: 'borrador|revision|publicada|cerrada|rechazada']
+  build_mode varchar(20) [not null]
+  owner_user_id uuid [note: 'ms_auth']
+  publisher_user_id uuid [note: 'ms_auth']
+  rejection_reason text
+  published_at timestamptz
+  closed_at timestamptz
+  version int [not null, default: 1]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  Indexes {
+    (company_id, front_id, period_start) [name: 'ix_grid_list']
+  }
+  Note: 'Sin campaign_id en cabecera #17'
+}
+
+Table schedule_grid_person {
+  id uuid [pk]
+  company_id uuid [not null]
+  grid_id uuid [not null, ref: > schedule_grid.id]
+  employee_id uuid [not null, note: 'ms_employee logico']
+  sort_order int [not null, default: 0]
+  modality_id uuid [ref: > work_modality.id]
+  site_id uuid [ref: > attendance_site.id]
+  Indexes {
+    (grid_id, employee_id) [unique]
+  }
+}
+
+Table schedule_grid_person_territory {
+  id uuid [pk]
+  company_id uuid [not null]
+  grid_person_id uuid [not null, ref: > schedule_grid_person.id]
+  territory_node_id uuid [not null, ref: > territory_node.id]
+  is_primary boolean [not null, default: false]
+  Indexes {
+    (grid_person_id, territory_node_id) [unique]
+  }
+  Note: 'Multi zona/SPT por persona #10 #14'
+}
+
+Table schedule_cell {
+  id uuid [pk]
+  company_id uuid [not null]
+  grid_id uuid [not null, ref: > schedule_grid.id]
+  employee_id uuid [not null, note: 'ms_employee logico']
+  work_date date [not null]
+  slot smallint [not null, default: 0]
+  shift_template_id uuid [ref: > shift_template.id]
+  cell_state_id uuid [ref: > cell_state.id]
+  modality_id uuid [ref: > work_modality.id]
+  site_id uuid [ref: > attendance_site.id]
+  campaign_id uuid [ref: > campaign.id]
+  note text
+  locked_attrs jsonb
+  origin varchar(40)
+  updated_at timestamptz [not null]
+  updated_by uuid
+  Indexes {
+    (grid_id, employee_id, work_date, slot) [unique]
+    (company_id, employee_id, work_date) [name: 'ix_cell_who']
+  }
+}
+
+Table schedule_cell_territory {
+  id uuid [pk]
+  company_id uuid [not null]
+  cell_id uuid [not null, ref: > schedule_cell.id]
+  territory_node_id uuid [not null, ref: > territory_node.id]
+  Indexes {
+    (cell_id, territory_node_id) [unique]
+  }
+}
+
+Table schedule_cell_break {
+  id uuid [pk]
+  company_id uuid [not null]
+  cell_id uuid [not null, ref: > schedule_cell.id]
+  template_break_id uuid [ref: > shift_template_break.id]
+  label varchar(80) [not null]
+  duration_minutes int [not null]
+  paid boolean [not null, default: false]
+  sort_order smallint [not null, default: 0]
+  Note: 'Breaks repetibles / especiales #11'
+}
+
+Table schedule_cell_history {
+  id uuid [pk]
+  company_id uuid [not null]
+  cell_id uuid [not null, ref: > schedule_cell.id]
+  grid_id uuid [not null]
+  employee_id uuid [not null]
+  work_date date [not null]
+  action varchar(40) [not null, note: 'reasignar|publicar|intercambio|novedad|import']
+  before_json jsonb
+  after_json jsonb
+  reason text
+  origin varchar(40)
+  changed_by uuid [not null, note: 'ms_auth']
+  changed_at timestamptz [not null]
+  Indexes {
+    (cell_id, changed_at) [name: 'ix_cell_hist']
+  }
+}
+
+Table shift_swap_request {
+  id uuid [pk]
+  company_id uuid [not null]
+  front_id uuid [not null, ref: > operational_front.id]
+  grid_id uuid [not null, ref: > schedule_grid.id]
+  requester_employee_id uuid [not null]
+  counterpart_employee_id uuid [not null]
+  requester_cell_id uuid [not null, ref: > schedule_cell.id]
+  counterpart_cell_id uuid [not null, ref: > schedule_cell.id]
+  status varchar(30) [not null]
+  rule_warnings jsonb
+  decision_reason text
+  decided_by uuid
+  decided_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  Note: 'Sin max_requests_per_month #16'
+}
+
+Table schedule_novelty {
+  id uuid [pk]
+  company_id uuid [not null]
+  grid_id uuid [not null, ref: > schedule_grid.id]
+  cell_id uuid [ref: > schedule_cell.id]
+  employee_id uuid [not null]
+  work_date date [not null]
+  cell_state_id uuid [ref: > cell_state.id]
+  description text
+  source varchar(40) [not null]
+  created_by uuid
+  created_at timestamptz [not null]
+  Note: 'Novedades vinculadas a malla #18'
+}
+
+Table excel_import_batch {
+  id uuid [pk]
+  company_id uuid [not null]
+  front_id uuid [ref: > operational_front.id]
+  import_type varchar(40) [not null]
+  file_name varchar(255)
+  status varchar(20) [not null]
+  summary_json jsonb
+  uploaded_by uuid
+  created_at timestamptz [not null]
+  Note: 'Plantilla Excel se mantiene #20'
+}
+
+Table excel_import_row {
+  id uuid [pk]
+  company_id uuid [not null]
+  batch_id uuid [not null, ref: > excel_import_batch.id]
+  row_number int [not null]
+  payload_json jsonb [not null]
+  action varchar(40)
+  status varchar(20) [not null]
+  message text
+}
