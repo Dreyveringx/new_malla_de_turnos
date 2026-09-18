@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Genera PROPUESTA-BD-MALLA-TURNOS-GUIA-TABLAS.docx — explicación y prioridad de tablas."""
+"""Genera PROPUESTA-BD-MALLA-TURNOS-GUIA-TABLAS.docx (v2 — post revision transversal)."""
 from pathlib import Path
 
 try:
@@ -75,489 +75,344 @@ def bullet(text, bold_prefix=None):
     return para
 
 
-# ---- Intro ----
-t = doc.add_heading("Guia de tablas — Propuesta BD Malla de Turnos", 0)
+def table_header(cells, hex_color="1A3A5C"):
+    for c in cells:
+        set_cell_shading(c, hex_color)
+        for para in c.paragraphs:
+            for run in para.runs:
+                run.font.color.rgb = RGBColor(255, 255, 255)
+                run.bold = True
+
+
+def add_meta(base, decision, color_rgb):
+    meta = doc.add_paragraph()
+    r1 = meta.add_run("Base de datos: ")
+    r1.bold = True
+    meta.add_run(f"{base}    ")
+    r2 = meta.add_run("Decision: ")
+    r2.bold = True
+    r3 = meta.add_run(decision)
+    r3.bold = True
+    r3.font.color.rgb = color_rgb
+
+
+# ---- Portada ----
+t = doc.add_heading("Guia de tablas — Propuesta BD Malla de Turnos (v2)", 0)
 for run in t.runs:
     run.font.color.rgb = RGBColor(0x1A, 0x3A, 0x5C)
 
 p(
-    "Modulo nuevo a integrar con GestionRRHH (ms_malla_turnos). "
-    "Documento para decidir que tablas crear y cuales no, reutilizando lo que ya existe en GRH.",
+    "Actualizado con la revision de transversalidad, reuso GRH y eliminacion de reglas "
+    "(cobertura, compensatorio, restricciones, normas). Separacion clara por base de datos.",
     italic=True,
 )
-p("Base: sesion stakeholder 11-sep-2026 + plan BD del modulo.")
+p("Companion: PROPUESTA-BD-MALLA-TURNOS-v2.xlsx | .dbml | DECISIONES.md")
 p("")
 
-add_heading("1. Idea clave (leer primero)", 1)
+add_heading("1. Idea clave", 1)
 p(
-    "No todas las ~30 tablas del diagrama son obligatorias el dia 1. El modelo es completo para "
-    "cubrir frentes, catalogos, grilla, swaps, novedades e importacion. Muchas filas son solo "
-    "vinculos (N:M) o soporte. GRH ya tiene empresa, empleados, areas, cargos, usuarios, roles, "
-    "festivos y notificaciones: esos NO se duplican."
+    "Los catalogos reutilizables viven en ms_parametrization. El dominio de malla "
+    "(frente, grilla, celdas, swap, novedades, import) vive en ms_malla_turnos. "
+    "Historial de cambios va a ms_audit. Entre BDs solo UUID logicos, sin FK cross-database."
 )
 p(
-    "Regla de integracion: en ms_malla_turnos guardamos UUID logicos "
-    "(company_id, employee_id, area_id, user_id, role_id). No hay FK cross-database hacia otros micros."
+    "Roles y permisos = RBAC de ms_auth (sin front_role_scope). "
+    "Estados de celda = entity_status existente. "
+    "work_schedule es jornada contractual: NO se reutiliza como plantilla de turno de malla."
 )
 
-add_heading("Como leer la prioridad", 2)
-for code, meaning in [
-    ("OBLIGATORIA", "Nucleo del modulo. Sin ella no hay malla usable."),
-    ("RECOMENDADA", "Necesaria para cumplir acuerdos de la sesion o un MVP realista."),
-    ("OPCIONAL / FASE 2", "Se puede diferir si el frente no usa esa capacidad."),
-    ("NO CREAR", "Ya vive en otro micro de GRH, o se elimino en la sesion."),
-]:
-    bullet(f" — {meaning}", bold_prefix=code)
-
-add_heading("2. Resumen rapido", 1)
-table = doc.add_table(rows=1, cols=3)
-table.style = "Table Grid"
-hdr = table.rows[0].cells
-hdr[0].text = "Prioridad"
-hdr[1].text = "Cantidad aprox."
-hdr[2].text = "Que implica"
-for c in hdr:
-    set_cell_shading(c, "1A3A5C")
-    for para in c.paragraphs:
-        for run in para.runs:
-            run.font.color.rgb = RGBColor(255, 255, 255)
-            run.bold = True
-
+add_heading("2. Resumen por base de datos", 1)
+tbl = doc.add_table(rows=1, cols=3)
+tbl.style = "Table Grid"
+hdr = tbl.rows[0].cells
+hdr[0].text = "Base de datos"
+hdr[1].text = "Que va ahi"
+hdr[2].text = "Ejemplos"
+table_header(hdr)
 for a, b, c in [
-    ("OBLIGATORIA", "aprox. 8-10", "Frente, turno, estados, malla, persona, celda, historial minimo"),
-    ("RECOMENDADA", "aprox. 8-10", "Capacidades, vinculos area/turno, breaks, modalidad, reglas seed"),
-    ("OPCIONAL / FASE 2", "aprox. 8-10", "Campanas, sitios, territorio, rotacion, swap, novedades, Excel"),
-    ("NO CREAR", "varios", "Empleados, areas, auth, festivos, notificaciones, cobertura UI, cortes nomina"),
+    (
+        "ms_parametrization",
+        "Catalogos transversales NUEVOS + reuso entity_status",
+        "shift_template, break_type, work_modality, attendance_site, operational_label, territory, hour_classification_band, catalog_code_sequence",
+    ),
+    (
+        "ms_malla_turnos",
+        "Dominio operativo del modulo",
+        "operational_front, schedule_grid/cell, rotacion, swap, novedades, import Excel, vinculos frente",
+    ),
+    ("ms_audit", "Historial / auditoria", "Reemplaza schedule_cell_history; UI consulta audit/timeline"),
+    (
+        "Otros GRH (solo UUID)",
+        "No se duplican",
+        "company, employee, areas, positions, auth, festivos, notificaciones",
+    ),
 ]:
-    row = table.add_row().cells
+    row = tbl.add_row().cells
     row[0].text = a
     row[1].text = b
     row[2].text = c
 
 p("")
-p(
-    "Si el primer frente es tipo Mesa (semanal, sin campanas/territorio/sitio), se puede arrancar "
-    "con un subconjunto pequeno y activar tablas cuando el frente pida esa capacidad.",
-    italic=True,
-)
 
-add_heading("3. Explicacion tabla por tabla", 1)
+add_heading("3. Que ya existe en GRH y como se reutiliza", 1)
+reuse = doc.add_table(rows=1, cols=3)
+reuse.style = "Table Grid"
+rh = reuse.rows[0].cells
+rh[0].text = "Concepto"
+rh[1].text = "Donde esta"
+rh[2].text = "Como lo usa Malla"
+table_header(rh)
+for a, b, c in [
+    ("Empresa (tenant)", "ms_company_admin / JWT", "company_id UUID logico"),
+    ("Empleado", "ms_employee", "employee_id; datos por API"),
+    ("Areas / cargos", "organizational_areas, positions", "front_area_link.area_id"),
+    ("Usuarios / roles / permisos", "ms_auth RBAC", "Sin front_role_scope"),
+    ("Estados de celda", "entity_status", "entity_type = malla_cell_state"),
+    ("Festivos / calendario", "company_calendar, national_holidays", "Lectura API para clasificacion de horas"),
+    ("Jornada contractual", "work_schedule + day + shift + schedule_assignment", "NO usar como plantilla de malla"),
+    ("Modalidad de estudio", "study_modalities", "NO sirve para modalidad laboral"),
+    ("Tipos de zona", "zone_types", "NO es arbol de cobertura operativa"),
+    ("Auditoria", "ms_audit", "Historial de celdas/cambios"),
+    ("Notificaciones", "ms_notification", "Publicacion y cambios"),
+]:
+    row = reuse.add_row().cells
+    row[0].text = a
+    row[1].text = b
+    row[2].text = c
 
-# (name, group, priority, for_what, reuses, can_skip, notes)
-tables = [
-    (
-        "operational_front",
-        "Catalogos / Configuracion",
-        "OBLIGATORIA",
-        "Define cada frente operativo (Contact Center, Mesa, etc.): periodo (semana/quincena/mes), "
-        "si se puede editar publicado, si hay intercambio, modo de armado.",
-        "company_id, created_by/updated_by apuntan a GRH (empresa / auth). No reutiliza una tabla "
-        "existente de 'frente': es concepto nuevo del modulo.",
-        "No. Es el corazon de la parametrizacion por frente.",
-        "Acuerdos sesion: periodo quincena para CC; builder/publisher separados como opcion.",
-    ),
-    (
-        "front_capability",
-        "Catalogos / Configuracion",
-        "RECOMENDADA",
-        "Flags por frente: usa territorio, campanas, modalidad, sitio, multi-break, multi-zona. "
-        "Evita pantallas/columnas que el frente no necesita.",
-        "Ninguna tabla GRH equivalente.",
-        "Se podria meter JSON en operational_front, pero la tabla facilita consultas y evolucion. Mejor mantenerla.",
-        "Permite no crear/usar campanas o territorio si el flag esta apagado.",
-    ),
-    (
-        "front_area_link",
-        "Catalogos / Configuracion",
-        "RECOMENDADA",
-        "Vincula el frente con una o varias areas de organizacion ya existentes en GRH (parametrizacion).",
-        "area_id → ms_parametrization (solo UUID).",
-        "Solo si el producto no filtra personas por area al armar mallas. En la practica casi siempre se necesita.",
-        "No duplica el catalogo de areas: solo el vinculo.",
-    ),
-    (
-        "front_user_scope",
-        "Catalogos / Configuracion",
-        "RECOMENDADA",
-        "Que usuarios pueden ver/gestionar cada frente (alcance).",
-        "user_id → ms_auth.",
-        "Si el alcance se resuelve solo con roles/permisos globales de GRH, se puede diferir. "
-        "Util cuando un coordinador solo ve 'su' frente.",
-        "Complementa RBAC de auth; no reemplaza roles del sistema.",
-    ),
-    (
-        "front_role_scope",
-        "Catalogos / Configuracion",
-        "OPCIONAL / FASE 2",
-        "Igual que user_scope pero por rol (todos los usuarios con ese rol ven el frente).",
-        "role_id → ms_auth.",
-        "Si, si al inicio se asigna alcance solo por usuario o por permiso generico.",
-        "Alternativa a listar usuarios uno a uno.",
-    ),
+p("")
+
+# ---- Param ----
+add_heading("4. Catalogos en ms_parametrization", 1)
+p("Nuevos (transversales para Malla y otros modulos) o reuso explicito.")
+
+param_tables = [
     (
         "catalog_code_sequence",
-        "Catalogos / Configuracion",
-        "RECOMENDADA",
-        "Genera codigos auto-consecutivos (T001, EST01, etc.) por empresa y tipo de catalogo.",
-        "No existe equivalente generico en GRH para este modulo.",
-        "Si temporalmente (codigos manuales), pero la sesion pidio auto-consecutivo (#3).",
-        "Sitios pueden seguir siendo manuales segun acuerdo.",
+        "NUEVA transversal",
+        "Secuencia de codigos auto-consecutivos por (company_id, catalog_type). "
+        "Sirve para malla y para cualquier catalogo GRH que hoy pide codigo manual.",
+        "API/servicio en parametrization. Malla (y otros) piden el siguiente codigo al crear registros.",
     ),
     (
         "shift_template",
-        "Catalogos / Configuracion",
-        "OBLIGATORIA",
-        "Catalogo de turnos (manana, tarde, noche): horario, color, si cruza medianoche, multi-break.",
-        "No hay catalogo de turnos reutilizable hoy en GRH para este uso. Es del modulo.",
-        "No.",
-        "Un turno = un horario; la zona no cambia el turno (acuerdo sesion).",
+        "NUEVA transversal (NO es work_schedule)",
+        "Plantilla de turno operativo (Manana A, Noche B): codigo, horario, color, multi-break. "
+        "work_schedule es jornada contractual semanal (horas base, CPM). Dominios distintos → se deja esta tabla.",
+        "Malla guarda shift_template_id (UUID logico) en celdas y en shift_template_front.",
     ),
     (
-        "shift_template_front",
-        "Catalogos / Configuracion",
-        "RECOMENDADA",
-        "Que turnos estan habilitados para cada frente (catalogo unico de empresa, activacion por frente).",
-        "Ninguna.",
-        "Solo si todos los frentes comparten exactamente los mismos turnos siempre (poco realista).",
-        "Evita duplicar el turno por frente.",
-    ),
-    (
-        "shift_template_day_schedule",
-        "Catalogos / Configuracion",
-        "OPCIONAL / FASE 2",
-        "Horario distinto por dia de la semana dentro de la misma plantilla (si aplica).",
-        "Ninguna.",
-        "Si, si al inicio todos los turnos tienen el mismo start/end todos los dias (ya estan en shift_template).",
-        "Usar solo cuando haya turnos con variacion diaria.",
+        "break_type",
+        "NUEVA transversal",
+        "Tipos de pausa (almuerzo, break, lactancia...) reutilizables por cualquier modulo.",
+        "Referenciado por shift_template_break y por schedule_cell_break.",
     ),
     (
         "shift_template_break",
-        "Catalogos / Configuracion",
-        "RECOMENDADA",
-        "Breaks definidos en la plantilla del turno (uno o varios).",
-        "Ninguna.",
-        "Diferible si el MVP no modela breaks; la sesion pidio multi-break (#11).",
-        "Las celdas pueden sobrescribir/aplicar breaks en schedule_cell_break.",
-    ),
-    (
-        "cell_state",
-        "Catalogos / Configuracion",
-        "OBLIGATORIA",
-        "Estados de celda: trabajo, descanso, vacaciones, incapacidad, etc. (catalogo configurable).",
-        "No confundir con estados de empleado en GRH. Aqui es estado de la celda de la malla.",
-        "No (aunque se puede seedear un set fijo al inicio).",
-        "Codigos auto-consecutivos recomendados.",
+        "NUEVA transversal",
+        "Breaks definidos en una plantilla de turno (1..N), con tipo y minutos.",
+        "Al asignar un turno a una celda se pueden copiar/ajustar en schedule_cell_break.",
     ),
     (
         "work_modality",
-        "Catalogos / Configuracion",
-        "RECOMENDADA (o REUTILIZAR)",
-        "Catalogo global de modalidades (presencial, remoto, hibrido). Una sola lista por empresa.",
-        "Si GRH ya tiene un catalogo de modalidad laboral usable via API, se puede REUTILIZAR y no crear "
-        "esta tabla; solo guardar modality_id logico en la celda.",
-        "Crear solo si no existe catalogo equivalente en parametrizacion/empleado. Sesion: modalidad GLOBAL (#2).",
-        "Decision de producto: existe modalidad en GRH hoy? Si si → NO crear; si no → crear aqui.",
+        "NUEVA transversal",
+        "Modalidad laboral global (presencial, remoto, hibrido). No confundir con study_modalities.",
+        "UUID en schedule_grid_person / schedule_cell. Sin modality_front (global).",
     ),
     (
         "attendance_site",
-        "Catalogos / Configuracion",
-        "OPCIONAL / FASE 2",
-        "Sitios / sedes de asistencia (cuando el frente usa sitio).",
-        "Si sedes ya existen en company-admin/parametrizacion, reutilizar UUID y no duplicar.",
-        "Si, si front_capability.usa_sitio = false (p. ej. Mesa).",
-        "Codigos pueden ser manuales.",
+        "NUEVA transversal",
+        "Sitios/sedes de asistencia. No existia en param ni company-admin. Sin attendance_site_front: "
+        "si el frente tiene usa_sitio, usa el catalogo de la empresa.",
+        "UUID site_id en persona/celda de malla.",
     ),
     (
-        "attendance_site_front",
-        "Catalogos / Configuracion",
-        "OPCIONAL / FASE 2",
-        "Habilita sitios por frente.",
-        "Depende de attendance_site (o del catalogo GRH de sedes).",
-        "Si, junto con sitios.",
-        "",
+        "operational_label",
+        "NUEVA transversal (antes campaign)",
+        "Etiquetas informativas (campana, cliente, tag). Catalogo transversal.",
+        "En celda: label_id. No va en cabecera de malla (#17).",
     ),
     (
-        "campaign",
-        "Catalogos / Configuracion",
-        "OPCIONAL / FASE 2",
-        "Campanas operativas (Contact Center). Se asignan en la celda, no en el encabezado de la malla.",
-        "Concepto nuevo del modulo (no es campana de seleccion de GRH).",
-        "Si, si el frente no usa campanas (Mesa). Activar con usa_campanas.",
-        "Acuerdo #17: sin campaign_id en cabecera de malla.",
-    ),
-    (
-        "territory_level",
-        "Catalogos / Configuracion",
-        "OPCIONAL / FASE 2",
-        "Niveles del arbol territorial (ej. Zona → SPT).",
-        "No es el organigrama de areas GRH; es jerarquia operativa de cobertura.",
-        "Si, si no hay multi-zona/territorio.",
-        "Acuerdos #10/#14 multi-zona.",
-    ),
-    (
-        "territory_node",
-        "Catalogos / Configuracion",
-        "OPCIONAL / FASE 2",
-        "Nodos del territorio (zonas, SPT, etc.).",
-        "No reutilizar areas GRH como si fueran zonas, salvo que negocio diga que son lo mismo (hoy no).",
-        "Si, si no aplica territorio.",
-        "",
-    ),
-    (
-        "validation_rule",
-        "Reglas internas y horas",
-        "RECOMENDADA",
-        "Reglas internas (seed/config): descansos, solapes, maximos, etc. Sin pantallas de cobertura/compensatorio.",
-        "Ninguna en GRH.",
-        "Se puede hardcodear reglas en codigo al inicio; la tabla permite tunear por empresa/frente sin redeploy.",
-        "Sesion elimino UI de cobertura (#4) y compensatorio (#5); la logica puede vivir aqui o en codigo.",
+        "territory",
+        "NUEVA transversal (arbol)",
+        "Una sola tabla con parent_id (hijos anidados). Reemplaza territory_level + territory_node. "
+        "level_label texto libre (Zona, SPT). No usar zone_types ni organizational_areas.",
+        "UUID territory_id en schedule_grid_person_territory / schedule_cell_territory.",
     ),
     (
         "hour_classification_band",
-        "Reglas internas y horas",
-        "OPCIONAL / FASE 2",
-        "Franjas para clasificar horas (diurna, nocturna, dominical, etc.) de cara a recargos.",
-        "Festivos se leen de ms_parametrization (NO crear tabla de festivos ni cortes de nomina).",
-        "Si al inicio si no se calcula recargo en el modulo; sesion #8 lo dejo como necesidad de franjas.",
-        "Eliminado payroll_cutoff (#6).",
+        "NUEVA transversal",
+        "Franjas para clasificar horas (ordinaria, nocturna, dominical, festiva, extras). "
+        "Si hay varios turnos el mismo dia (slots), cada celda se clasifica. Festivos ya existen. "
+        "No calcula nomina ni cortes (#6).",
+        "Reporteria/export desde malla u otros modulos.",
     ),
     (
-        "rotation_pattern",
-        "Reglas internas y horas",
-        "OPCIONAL / FASE 2",
-        "Patrones de rotacion para sugerir/asignar al cerrar o en modo asistido/automatico.",
-        "Ninguna.",
-        "Si, si el MVP es solo armado manual.",
-        "Sesion #12: rotacion al cerrar periodo.",
-    ),
-    (
-        "rotation_pattern_step",
-        "Reglas internas y horas",
-        "OPCIONAL / FASE 2",
-        "Pasos del patron (dia N → turno/estado).",
-        "Depende de rotation_pattern.",
-        "Si, junto con el patron.",
-        "",
-    ),
-    (
-        "schedule_grid",
-        "Operacion / Planificacion",
-        "OBLIGATORIA",
-        "La malla en si: frente + periodo (desde/hasta) + estado (borrador, publicada) + modo de armado.",
-        "company_id, created_by → GRH. Sin campaign_id en cabecera.",
-        "No.",
-        "Periodo segun frente (semana / quincena / mes).",
-    ),
-    (
-        "schedule_grid_person",
-        "Operacion / Planificacion",
-        "OBLIGATORIA",
-        "Personas incluidas en esa malla (fila de la grilla).",
-        "employee_id → ms_employee (datos de persona NO se copian; se consultan por API).",
-        "No.",
-        "Puede llevar modalidad/sitio por defecto de la persona en el periodo.",
-    ),
-    (
-        "schedule_grid_person_territory",
-        "Operacion / Planificacion",
-        "OPCIONAL / FASE 2",
-        "Multi-zona / SPT asignados a la persona dentro de la malla.",
-        "territory_node del modulo.",
-        "Si, si no hay multi-zona.",
-        "Acuerdos #10/#14.",
-    ),
-    (
-        "schedule_cell",
-        "Operacion / Planificacion",
-        "OBLIGATORIA",
-        "Celda dia x persona: turno, estado, modalidad, sitio, campana, horas, notas.",
-        "Referencias logicas a catalogos del modulo + modality/site si vienen de GRH.",
-        "No.",
-        "Es donde ocurre la operacion diaria.",
-    ),
-    (
-        "schedule_cell_territory",
-        "Operacion / Planificacion",
-        "OPCIONAL / FASE 2",
-        "Territorios asociados a una celda concreta (si aplica override por dia).",
-        "territory_node.",
-        "Si, si no hay territorio o solo se modela a nivel persona.",
-        "",
-    ),
-    (
-        "schedule_cell_break",
-        "Operacion / Planificacion",
-        "RECOMENDADA",
-        "Breaks reales aplicados/registrados en la celda (incluyendo especiales).",
-        "Puede nacer desde shift_template_break.",
-        "Diferible si el MVP no gestiona breaks en grilla.",
-        "Multi-break #11.",
-    ),
-    (
-        "schedule_cell_history",
-        "Operacion / Planificacion",
-        "OBLIGATORIA (minimo)",
-        "Auditoria de cambios en celdas (quien cambio que y cuando), sobre todo si published_editable = true.",
-        "user_id → ms_auth. No reemplaza ms_audit global; es historial de negocio de la malla.",
-        "No recomendable omitir si hay edicion post-publicacion. Se puede empezar con eventos minimos.",
-        "Complementario a audit-service si mas adelante se integra.",
-    ),
-    (
-        "shift_swap_request",
-        "Intercambio, novedades e importacion",
-        "OPCIONAL / FASE 2",
-        "Solicitudes de intercambio entre personas. Sin tope mensual (#16).",
-        "employee_id / user_id → GRH. Notificacion via ms_notification.",
-        "Si, si swap_enabled = false en el frente al inicio.",
-        "Activar cuando el frente habilite intercambio.",
-    ),
-    (
-        "schedule_novelty",
-        "Intercambio, novedades e importacion",
-        "OPCIONAL / FASE 2",
-        "Novedades (ausencias, cambios) vinculadas a la malla (#18).",
-        "Evaluar si GRH ya tiene novedades de nomina/asistencia; si si, integrar por ID y no duplicar el dominio.",
-        "Si al inicio; o solo un vinculo liviano a un sistema externo de novedades.",
-        "Decision importante de reuso: la novedad es del modulo o de otro sistema?",
-    ),
-    (
-        "excel_import_batch",
-        "Intercambio, novedades e importacion",
-        "OPCIONAL / FASE 2",
-        "Cabecera de carga masiva Excel (quien, cuando, estado del lote).",
-        "Ninguna.",
-        "Si, si el armado es solo UI; la sesion mantuvo plantilla Excel (#20).",
-        "Util para Contact Center / volumenes altos.",
-    ),
-    (
-        "excel_import_row",
-        "Intercambio, novedades e importacion",
-        "OPCIONAL / FASE 2",
-        "Detalle por fila del Excel (errores de validacion, mapeo).",
-        "Depende del batch.",
-        "Si, junto con importacion.",
-        "",
+        "entity_status (REUSO)",
+        "YA EXISTE — no crear cell_state",
+        "Usar entity_type = 'malla_cell_state' para Trabajo, Descanso, VAC, INC, etc. "
+        "Ya tiene name, color, sort_order, is_active, is_final_status.",
+        "schedule_cell.cell_state_id = entity_status.id (UUID logico).",
     ),
 ]
 
-
-def add_table_section(item):
-    name, group, priority, for_what, reuses, can_skip, notes = item
+for name, decision, purpose, how in param_tables:
     add_heading(name, 2)
-    meta = doc.add_paragraph()
-    r1 = meta.add_run("Grupo: ")
-    r1.bold = True
-    meta.add_run(f"{group}    ")
-    r2 = meta.add_run("Prioridad: ")
-    r2.bold = True
-    r3 = meta.add_run(priority)
-    r3.bold = True
-    if priority.startswith("OBLIGATORIA"):
-        r3.font.color.rgb = RGBColor(0xB0, 0x00, 0x20)
-    elif priority.startswith("RECOMENDADA"):
-        r3.font.color.rgb = RGBColor(0xC6, 0x5D, 0x00)
-    elif priority.startswith("OPCIONAL"):
-        r3.font.color.rgb = RGBColor(0x2E, 0x7D, 0x32)
-    else:
-        r3.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
-
+    add_meta("ms_parametrization", decision, RGBColor(0x2E, 0x7D, 0x32))
     p("Para que sirve", bold=True)
-    p(for_what)
-    p("Que reutiliza de GRH / que no duplicar", bold=True)
-    p(reuses)
-    p("Se puede no crear o diferir?", bold=True)
-    p(can_skip)
-    if notes:
-        p("Nota de sesion / diseno", bold=True)
-        p(notes)
+    p(purpose)
+    p("Como se reutiliza / consume", bold=True)
+    p(how)
 
+# ---- Malla ----
+add_heading("5. Dominio en ms_malla_turnos", 1)
 
-for item in tables:
-    add_table_section(item)
+malla_tables = [
+    (
+        "operational_front",
+        "Frente operativo: periodo (semana/quincena/mes), edicion publicada, swap, modo de armado.",
+    ),
+    (
+        "front_capability",
+        "Flags por frente: usa_territorio, usa_labels, usa_modalidad, usa_sitio, usa_multi_break, usa_multi_zona.",
+    ),
+    (
+        "front_area_link",
+        "Vinculo frente ↔ organizational_areas (UUID logico).",
+    ),
+    (
+        "front_user_scope",
+        "Alcance por usuario (que frentes ve). Roles → RBAC; no hay front_role_scope.",
+    ),
+    (
+        "shift_template_front",
+        "Que plantillas de turno (param) estan habilitadas en el frente.",
+    ),
+    (
+        "rotation_pattern / rotation_pattern_step",
+        "Patrones de rotacion al cerrar periodo (#12). Referencian shift_template / entity_status por UUID.",
+    ),
+    (
+        "schedule_grid",
+        "Cabecera de malla (frente + periodo + estado). Sin etiqueta en cabecera.",
+    ),
+    (
+        "schedule_grid_person",
+        "Personas de la malla (employee_id). Modalidad/sitio opcionales del periodo.",
+    ),
+    (
+        "schedule_grid_person_territory",
+        "Multi-zona/SPT de la persona en el periodo (#10/#14).",
+    ),
+    (
+        "schedule_cell",
+        "Celda dia x persona (slot). Referencias logicas a turnos, estados, modalidad, sitio, label.",
+    ),
+    (
+        "schedule_cell_territory",
+        "Override de territorio en la celda.",
+    ),
+    (
+        "schedule_cell_break",
+        "Breaks reales de la celda (especiales/repetidos #11).",
+    ),
+    (
+        "shift_swap_request",
+        "Intercambio sin tope mensual. Sin motor de cobertura/compensatorio.",
+    ),
+    (
+        "schedule_novelty",
+        "Novedades vinculadas a la malla (#18).",
+    ),
+    (
+        "excel_import_batch / excel_import_row",
+        "Staging de importacion Excel (#20).",
+    ),
+]
 
-add_heading("4. Lo que NO se crea en ms_malla_turnos", 1)
-p("Estos conceptos se consumen de otros micros o se eliminaron en la sesion:")
+for name, purpose in malla_tables:
+    add_heading(name, 2)
+    add_meta("ms_malla_turnos", "DOMINIO — se crea aqui", RGBColor(0x1F, 0x4E, 0x79))
+    p("Para que sirve", bold=True)
+    p(purpose)
 
-t2 = doc.add_table(rows=1, cols=3)
-t2.style = "Table Grid"
-h = t2.rows[0].cells
-h[0].text = "Concepto"
-h[1].text = "Donde vive"
-h[2].text = "Implicacion"
-for c in h:
-    set_cell_shading(c, "1A3A5C")
-    for para in c.paragraphs:
-        for run in para.runs:
-            run.font.color.rgb = RGBColor(255, 255, 255)
-            run.bold = True
+# ---- Audit ----
+add_heading("6. Auditoria (ms_audit)", 1)
+add_heading("audit_log / timeline", 2)
+add_meta("ms_audit", "REUSO — no crear schedule_cell_history", RGBColor(0x6A, 0x1B, 0x9A))
+p(
+    "Cada cambio de celda, publicacion o swap emite evento a ms_audit (y/o timeline). "
+    "La pantalla de historial de la malla consulta ese servicio. No hay tabla local de historial."
+)
 
-for a, b, c in [
-    ("company_id (empresa)", "ms_company_admin / JWT", "Tenant en todas las tablas; nunca tabla local de empresas."),
-    ("employee_id (persona)", "ms_employee", "Nombre, documento, cargo, etc. por API. Solo UUID en malla."),
-    ("area_id / cargo_id", "ms_parametrization", "Organizacion ya existe; solo vinculos."),
-    ("user_id / role_id", "ms_auth", "Permisos, alcance, auditoria de quien cambio."),
-    ("Festivos / calendario", "ms_parametrization", "Lectura API. No tabla local de cortes de nomina (#6)."),
-    ("Notificaciones", "ms_notification", "Publicacion y cambios (#13); el modulo emite eventos."),
-    ("coverage_rule (UI)", "Eliminado sesion #4", "Sin pantalla de cobertura por franjas."),
-    ("compensatory_rule (UI)", "Eliminado sesion #5", "Sin pantalla de compensatorio."),
-    ("payroll_cutoff", "Eliminado sesion #6", "Sin calendario de cortes de nomina en el modulo."),
-    ("work_modality_front", "Eliminado sesion #2", "Modalidad es global, no por frente."),
-    ("swap_monthly_limit", "Eliminado sesion #16", "Solicitudes de intercambio sin tope mensual."),
+# ---- Eliminados ----
+add_heading("7. Eliminado del diseno", 1)
+drop = doc.add_table(rows=1, cols=2)
+drop.style = "Table Grid"
+dh = drop.rows[0].cells
+dh[0].text = "Tabla / concepto"
+dh[1].text = "Motivo"
+table_header(dh, "B71C1C")
+for a, b in [
+    ("front_role_scope", "Roles con RBAC ms_auth"),
+    ("attendance_site_front", "Basta capability usa_sitio + catalogo empresa"),
+    ("shift_template_day_schedule", "Un turno = un horario; variacion diaria es work_schedule contractual"),
+    ("territory_level + territory_node", "Reemplazados por territory (parent_id)"),
+    ("campaign", "Renombrado a operational_label"),
+    ("cell_state (tabla propia)", "Reutilizar entity_status"),
+    ("validation_rule", "Sin reglas operativas / cobertura / compensatorio / restricciones / normas en BD"),
+    ("coverage / compensatory / assignment_restriction / operational_norm", "Fuera de alcance"),
+    ("payroll_cutoff", "Sesion #6"),
+    ("work_modality_front", "Modalidad global"),
+    ("swap_monthly_limit", "Sesion #16"),
+    ("schedule_cell_history", "Pasa a ms_audit"),
+    ("catalog_code_sequence en malla", "Movida a parametrization (transversal)"),
 ]:
-    row = t2.add_row().cells
+    row = drop.add_row().cells
     row[0].text = a
     row[1].text = b
-    row[2].text = c
-
-add_heading("5. Subconjunto sugerido para un MVP (Mesa o primer frente simple)", 1)
-p("Si el objetivo es validar armado y publicacion sin Contact Center completo:")
-
-p("Crear si o si", bold=True)
-for name in [
-    "operational_front",
-    "front_capability (aunque sea con flags en false)",
-    "front_area_link",
-    "shift_template + shift_template_front",
-    "cell_state",
-    "schedule_grid + schedule_grid_person + schedule_cell",
-    "schedule_cell_history (minimo)",
-    "catalog_code_sequence (o codigos manuales temporales)",
-]:
-    bullet(name)
-
-p("Diferir hasta que el frente lo pida", bold=True)
-for name in [
-    "campaign, attendance_site*, territory_*",
-    "schedule_grid_person_territory, schedule_cell_territory",
-    "shift_template_day_schedule",
-    "rotation_pattern*",
-    "shift_swap_request",
-    "schedule_novelty (o integrar novedad GRH existente)",
-    "excel_import_*",
-    "hour_classification_band (si no hay calculo de recargo aun)",
-    "front_role_scope",
-]:
-    bullet(name)
-
-p("Decidir con el equipo GRH antes de crear", bold=True)
-for name in [
-    "work_modality — ya existe catalogo en parametrizacion/empleado?",
-    "attendance_site — ya existen sedes/sitios en company-admin?",
-    "schedule_novelty — el dominio de novedades ya esta en otro modulo?",
-]:
-    bullet(name)
-
-add_heading("6. Como usar este documento con el Excel y dbdiagram", 1)
-bullet("detalle columna a columna (tipo y descripcion).", bold_prefix="Excel / CSV: ")
-bullet("diagrama visual de relaciones internas del modulo.", bold_prefix="dbdiagram (.dbml): ")
-bullet("decide que tablas entran al MVP y cuales se aplazan o se reutilizan.", bold_prefix="Esta guia: ")
 
 p("")
-p("Archivos hermanos en docs/:", italic=True)
-bullet("PROPUESTA-BD-MALLA-TURNOS.xlsx")
-bullet("PROPUESTA-BD-MALLA-TURNOS-COLUMNAS.csv")
-bullet("PROPUESTA-BD-MALLA-TURNOS.dbml")
 
-doc.save(OUT)
-print("OK", OUT)
-print("bytes", OUT.stat().st_size)
+add_heading("8. MVP sugerido", 1)
+p("Parametrization (minimo)", bold=True)
+for x in [
+    "catalog_code_sequence",
+    "shift_template (+ break_type / shift_template_break si hay breaks)",
+    "entity_status con entity_type=malla_cell_state",
+    "work_modality (si el frente usa modalidad)",
+]:
+    bullet(x)
+
+p("Malla (minimo)", bold=True)
+for x in [
+    "operational_front + front_capability + front_area_link",
+    "shift_template_front",
+    "schedule_grid + schedule_grid_person + schedule_cell",
+    "front_user_scope (si hace falta alcance por usuario)",
+]:
+    bullet(x)
+
+p("Diferir", bold=True)
+for x in [
+    "territory* / labels / attendance_site si el frente no los usa",
+    "rotation_pattern*, swap, novelty, excel_import_*",
+    "hour_classification_band hasta reporteria de recargos",
+]:
+    bullet(x)
+
+add_heading("9. Archivos companion", 1)
+bullet("PROPUESTA-BD-MALLA-TURNOS-v2.xlsx — columnas por BD + hoja Decisiones", bold_prefix="Excel: ")
+bullet("PROPUESTA-BD-MALLA-TURNOS.dbml — pegar en dbdiagram.io", bold_prefix="Diagrama: ")
+bullet("PROPUESTA-BD-MALLA-TURNOS-DECISIONES.md — resumen corto", bold_prefix="Markdown: ")
+bullet("este Word — explicacion tabla a tabla v2", bold_prefix="Guia: ")
+
+# Save with fallback if locked
+try:
+    doc.save(OUT)
+    print("OK", OUT)
+except PermissionError:
+    alt = OUT.with_name("PROPUESTA-BD-MALLA-TURNOS-GUIA-TABLAS-v2.docx")
+    doc.save(alt)
+    print("OK (fallback)", alt)
+print("bytes", OUT.stat().st_size if OUT.exists() else "n/a")

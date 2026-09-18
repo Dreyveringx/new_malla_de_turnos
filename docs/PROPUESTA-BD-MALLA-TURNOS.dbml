@@ -1,88 +1,23 @@
-// Propuesta BD — Malla de Turnos (ms_malla_turnos)
-// Post sesion stakeholder 11-sep-2026
-// IDs externos GRH = UUID logicos SIN FK cross-database
+// Propuesta BD Malla de Turnos v2 — post revision
+// IDs entre BD = UUID logicos SIN FK cross-database
 // Pegar en https://dbdiagram.io
 
-Project malla_turnos {
+Project malla_turnos_v2 {
   database_type: 'PostgreSQL'
-  Note: 'BD nueva ms_malla_turnos. Tenant=company_id. Integracion GRH por UUID logicos.'
+  Note: 'Catalogos transversales en ms_parametrization. Dominio en ms_malla_turnos. Historial en ms_audit.'
 }
 
-Table operational_front {
-  id uuid [pk]
-  company_id uuid [not null, note: 'Tenant GRH (logico)']
-  code varchar(20) [not null]
-  name varchar(120) [not null]
-  description text
-  builder_profile_label varchar(120)
-  publisher_profile_label varchar(120)
-  separate_builder_publisher boolean [not null, default: false]
-  build_mode varchar(20) [not null, note: 'manual|asistido|automatico']
-  period_type varchar(10) [not null, note: 'semana|quincena|mes']
-  published_editable boolean [not null, default: false]
-  swap_enabled boolean [not null, default: false, note: 'Sin tope mensual solicitudes #16']
-  active boolean [not null, default: true]
-  created_at timestamptz [not null]
-  updated_at timestamptz [not null]
-  created_by uuid [note: 'ms_auth user_id logico']
-  updated_by uuid
-  Indexes {
-    (company_id, code) [unique]
-  }
-}
-
-Table front_capability {
-  id uuid [pk]
-  company_id uuid [not null]
-  front_id uuid [not null, ref: > operational_front.id]
-  capability_code varchar(40) [not null, note: 'usa_territorio|usa_campanas|usa_modalidad|usa_sitio|usa_multi_break|usa_multi_zona']
-  enabled boolean [not null, default: false]
-  config_json jsonb
-  Indexes {
-    (company_id, front_id, capability_code) [unique]
-  }
-}
-
-Table front_area_link {
-  id uuid [pk]
-  company_id uuid [not null]
-  front_id uuid [not null, ref: > operational_front.id]
-  area_id uuid [not null, note: 'ms_parametrization area_id logico']
-  Indexes {
-    (company_id, front_id, area_id) [unique]
-  }
-}
-
-Table front_user_scope {
-  id uuid [pk]
-  company_id uuid [not null]
-  front_id uuid [not null, ref: > operational_front.id]
-  user_id uuid [not null, note: 'ms_auth user_id logico']
-  Indexes {
-    (company_id, front_id, user_id) [unique]
-  }
-}
-
-Table front_role_scope {
-  id uuid [pk]
-  company_id uuid [not null]
-  front_id uuid [not null, ref: > operational_front.id]
-  role_id uuid [not null, note: 'ms_auth role_id logico']
-  Indexes {
-    (company_id, front_id, role_id) [unique]
-  }
-}
+// ========== ms_parametrization (catalogos transversales) ==========
 
 Table catalog_code_sequence {
   id uuid [pk]
-  company_id uuid [not null]
-  catalog_type varchar(40) [not null]
+  company_id uuid [not null, note: 'Tenant']
+  catalog_type varchar(60) [not null]
   prefix varchar(10)
   next_value int [not null, default: 1]
-  Indexes {
-    (company_id, catalog_type) [unique]
-  }
-  Note: 'Codigos auto-consecutivos #3. Sitios pueden ser manual.'
+  pad_length smallint [not null, default: 3]
+  Indexes { (company_id, catalog_type) [unique] }
+  Note: 'ms_parametrization — transversal a todo GRH'
 }
 
 Table shift_template {
@@ -95,154 +30,82 @@ Table shift_template {
   crosses_midnight boolean [not null, default: false]
   color_hex varchar(7)
   net_hours numeric(5,2)
-  multi_break_enabled boolean [not null, default: false, note: '#11']
+  multi_break_enabled boolean [not null, default: false]
   active boolean [not null, default: true]
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
-  Indexes {
-    (company_id, code) [unique]
-  }
-  Note: 'Catalogo unico. Un turno = un horario; la zona no cambia el turno.'
+  Indexes { (company_id, code) [unique] }
+  Note: 'ms_parametrization. NO es work_schedule (jornada contractual)'
 }
 
-Table shift_template_front {
+Table break_type {
   id uuid [pk]
   company_id uuid [not null]
-  shift_template_id uuid [not null, ref: > shift_template.id]
-  front_id uuid [not null, ref: > operational_front.id]
-  Indexes {
-    (company_id, shift_template_id, front_id) [unique]
-  }
-}
-
-Table shift_template_day_schedule {
-  id uuid [pk]
-  company_id uuid [not null]
-  shift_template_id uuid [not null, ref: > shift_template.id]
-  dow smallint [not null]
-  start_time time [not null]
-  end_time time [not null]
-  crosses_midnight boolean [not null, default: false]
-  Indexes {
-    (shift_template_id, dow) [unique]
-  }
+  code varchar(20) [not null]
+  name varchar(80) [not null]
+  default_minutes int
+  paid_default boolean [not null, default: false]
+  active boolean [not null, default: true]
+  Indexes { (company_id, code) [unique] }
+  Note: 'ms_parametrization — tipos de pausa transversales'
 }
 
 Table shift_template_break {
   id uuid [pk]
   company_id uuid [not null]
   shift_template_id uuid [not null, ref: > shift_template.id]
-  code varchar(20)
-  label varchar(80) [not null]
+  break_type_id uuid [not null, ref: > break_type.id]
   duration_minutes int [not null]
   paid boolean [not null, default: false]
   sort_order smallint [not null, default: 0]
-  active boolean [not null, default: true]
-}
-
-Table cell_state {
-  id uuid [pk]
-  company_id uuid [not null]
-  code varchar(20) [not null]
-  name varchar(120) [not null]
-  color_hex varchar(7)
-  assignable boolean [not null, default: true]
-  counts_hours boolean [not null, default: false]
-  deducts_productive boolean [not null, default: false]
-  requires_support boolean [not null, default: false]
-  active boolean [not null, default: true]
-  Indexes {
-    (company_id, code) [unique]
-  }
+  Note: 'ms_parametrization'
 }
 
 Table work_modality {
   id uuid [pk]
   company_id uuid [not null]
   code varchar(20) [not null]
-  name varchar(120) [not null]
-  icon varchar(40)
+  name varchar(80) [not null]
   active boolean [not null, default: true]
-  Indexes {
-    (company_id, code) [unique]
-  }
-  Note: '#2 Catalogo GLOBAL. No hay tabla modality_front.'
+  Indexes { (company_id, code) [unique] }
+  Note: 'ms_parametrization. Distinto de study_modalities'
 }
 
 Table attendance_site {
   id uuid [pk]
   company_id uuid [not null]
-  code varchar(20) [not null, note: 'Puede ser manual codigo negocio #3']
+  code varchar(20) [not null]
   name varchar(120) [not null]
-  site_type varchar(40)
-  address varchar(255)
+  address text
+  city_id uuid [note: 'cities logico']
   active boolean [not null, default: true]
-  Indexes {
-    (company_id, code) [unique]
-  }
+  Indexes { (company_id, code) [unique] }
+  Note: 'ms_parametrization — no existia; sin site_front'
 }
 
-Table attendance_site_front {
-  id uuid [pk]
-  company_id uuid [not null]
-  site_id uuid [not null, ref: > attendance_site.id]
-  front_id uuid [not null, ref: > operational_front.id]
-  Indexes {
-    (company_id, site_id, front_id) [unique]
-  }
-}
-
-Table campaign {
+Table operational_label {
   id uuid [pk]
   company_id uuid [not null]
   code varchar(20) [not null]
   name varchar(120) [not null]
-  front_id uuid [ref: > operational_front.id]
-  valid_from date
-  valid_to date
+  color_hex varchar(7)
+  category varchar(40) [note: 'campana|cliente|otro']
   active boolean [not null, default: true]
-  Indexes {
-    (company_id, code) [unique]
-  }
-  Note: 'No se asigna en paso 1 de crear malla #17; va en celda.'
+  Indexes { (company_id, code) [unique] }
+  Note: 'ms_parametrization — etiquetas (antes campaign)'
 }
 
-Table territory_level {
+Table territory {
   id uuid [pk]
   company_id uuid [not null]
-  level_order smallint [not null]
-  name varchar(80) [not null]
-  Indexes {
-    (company_id, level_order) [unique]
-  }
-}
-
-Table territory_node {
-  id uuid [pk]
-  company_id uuid [not null]
-  level_id uuid [not null, ref: > territory_level.id]
-  parent_id uuid [ref: > territory_node.id]
+  parent_id uuid [ref: > territory.id, note: 'NULL=raiz']
   code varchar(20) [not null]
   name varchar(120) [not null]
+  level_label varchar(40) [note: 'Zona, SPT...']
+  sort_order int [not null, default: 0]
   active boolean [not null, default: true]
-  Indexes {
-    (company_id, code) [unique]
-  }
-}
-
-Table validation_rule {
-  id uuid [pk]
-  company_id uuid [not null]
-  code varchar(40) [not null]
-  scope varchar(20) [not null, note: 'empresa|frente']
-  front_id uuid [ref: > operational_front.id]
-  param_value varchar(40)
-  param_unit varchar(40)
-  severity varchar(20) [not null]
-  priority int [not null, default: 100]
-  active boolean [not null, default: true]
-  notes text
-  Note: 'Reglas internas sin pantallas de cobertura/compensatorio #4 #5'
+  Indexes { (company_id, code) [unique] }
+  Note: 'ms_parametrization — arbol unico; reemplaza territory_level/node'
 }
 
 Table hour_classification_band {
@@ -256,12 +119,83 @@ Table hour_classification_band {
   crosses_midnight boolean [not null, default: false]
   applies_sunday boolean [not null, default: false]
   applies_holiday boolean [not null, default: false]
-  sort_order smallint [not null, default: 0]
+  priority int [not null, default: 100]
   active boolean [not null, default: true]
-  Indexes {
-    (company_id, code) [unique]
-  }
-  Note: 'Franjas recargo #8. Festivos por API parametrization.'
+  Indexes { (company_id, code) [unique] }
+  Note: 'ms_parametrization — clasifica horas; festivos ya en company_calendar'
+}
+
+Table entity_status {
+  id uuid [pk]
+  company_id uuid [not null]
+  entity_type varchar(50) [not null, note: 'usar malla_cell_state']
+  name varchar(100) [not null]
+  description varchar(255)
+  sort_order int [not null]
+  color varchar(7)
+  is_active boolean [not null]
+  is_final_status boolean [not null]
+  is_default_status boolean [not null]
+  Note: 'YA EXISTE en ms_parametrization — REUSO para estados de celda'
+}
+
+// ========== ms_malla_turnos (dominio) ==========
+
+Table operational_front {
+  id uuid [pk]
+  company_id uuid [not null]
+  code varchar(20) [not null]
+  name varchar(120) [not null]
+  description text
+  builder_profile_label varchar(120)
+  publisher_profile_label varchar(120)
+  separate_builder_publisher boolean [not null, default: false]
+  build_mode varchar(20) [not null]
+  period_type varchar(10) [not null, note: 'semana|quincena|mes']
+  published_editable boolean [not null, default: false]
+  swap_enabled boolean [not null, default: false]
+  active boolean [not null, default: true]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  created_by uuid
+  updated_by uuid
+  Indexes { (company_id, code) [unique] }
+  Note: 'ms_malla_turnos'
+}
+
+Table front_capability {
+  id uuid [pk]
+  company_id uuid [not null]
+  front_id uuid [not null, ref: > operational_front.id]
+  capability_code varchar(40) [not null]
+  enabled boolean [not null, default: false]
+  config_json jsonb
+  Indexes { (company_id, front_id, capability_code) [unique] }
+}
+
+Table front_area_link {
+  id uuid [pk]
+  company_id uuid [not null]
+  front_id uuid [not null, ref: > operational_front.id]
+  area_id uuid [not null, note: 'organizational_areas logico']
+  Indexes { (company_id, front_id, area_id) [unique] }
+}
+
+Table front_user_scope {
+  id uuid [pk]
+  company_id uuid [not null]
+  front_id uuid [not null, ref: > operational_front.id]
+  user_id uuid [not null, note: 'ms_auth']
+  Indexes { (company_id, front_id, user_id) [unique] }
+  Note: 'Sin front_role_scope — RBAC'
+}
+
+Table shift_template_front {
+  id uuid [pk]
+  company_id uuid [not null]
+  front_id uuid [not null, ref: > operational_front.id]
+  shift_template_id uuid [not null, note: 'shift_template param logico']
+  Indexes { (company_id, front_id, shift_template_id) [unique] }
 }
 
 Table rotation_pattern {
@@ -271,7 +205,7 @@ Table rotation_pattern {
   code varchar(20) [not null]
   name varchar(120) [not null]
   cycle_length smallint [not null]
-  auto_apply_on_period_close boolean [not null, default: true, note: '#12']
+  auto_apply_on_period_close boolean [not null, default: true]
   active boolean [not null, default: true]
 }
 
@@ -280,8 +214,8 @@ Table rotation_pattern_step {
   company_id uuid [not null]
   pattern_id uuid [not null, ref: > rotation_pattern.id]
   step_order smallint [not null]
-  shift_template_id uuid [ref: > shift_template.id]
-  cell_state_id uuid [ref: > cell_state.id]
+  shift_template_id uuid [note: 'param logico']
+  cell_state_id uuid [note: 'entity_status logico']
 }
 
 Table schedule_grid {
@@ -292,109 +226,77 @@ Table schedule_grid {
   period_start date [not null]
   period_end date [not null]
   period_type varchar(10) [not null]
-  status varchar(20) [not null, note: 'borrador|revision|publicada|cerrada|rechazada']
+  status varchar(20) [not null]
   build_mode varchar(20) [not null]
-  owner_user_id uuid [note: 'ms_auth']
-  publisher_user_id uuid [note: 'ms_auth']
+  owner_user_id uuid
+  publisher_user_id uuid
   rejection_reason text
   published_at timestamptz
   closed_at timestamptz
   version int [not null, default: 1]
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
-  Indexes {
-    (company_id, front_id, period_start) [name: 'ix_grid_list']
-  }
-  Note: 'Sin campaign_id en cabecera #17'
+  Note: 'ms_malla_turnos — sin label en cabecera'
 }
 
 Table schedule_grid_person {
   id uuid [pk]
   company_id uuid [not null]
   grid_id uuid [not null, ref: > schedule_grid.id]
-  employee_id uuid [not null, note: 'ms_employee logico']
+  employee_id uuid [not null, note: 'ms_employee']
   sort_order int [not null, default: 0]
-  modality_id uuid [ref: > work_modality.id]
-  site_id uuid [ref: > attendance_site.id]
-  Indexes {
-    (grid_id, employee_id) [unique]
-  }
+  modality_id uuid [note: 'work_modality param']
+  site_id uuid [note: 'attendance_site param']
+  Indexes { (grid_id, employee_id) [unique] }
 }
 
 Table schedule_grid_person_territory {
   id uuid [pk]
   company_id uuid [not null]
   grid_person_id uuid [not null, ref: > schedule_grid_person.id]
-  territory_node_id uuid [not null, ref: > territory_node.id]
+  territory_id uuid [not null, note: 'territory param']
   is_primary boolean [not null, default: false]
-  Indexes {
-    (grid_person_id, territory_node_id) [unique]
-  }
-  Note: 'Multi zona/SPT por persona #10 #14'
+  Indexes { (grid_person_id, territory_id) [unique] }
 }
 
 Table schedule_cell {
   id uuid [pk]
   company_id uuid [not null]
   grid_id uuid [not null, ref: > schedule_grid.id]
-  employee_id uuid [not null, note: 'ms_employee logico']
+  employee_id uuid [not null]
   work_date date [not null]
   slot smallint [not null, default: 0]
-  shift_template_id uuid [ref: > shift_template.id]
-  cell_state_id uuid [ref: > cell_state.id]
-  modality_id uuid [ref: > work_modality.id]
-  site_id uuid [ref: > attendance_site.id]
-  campaign_id uuid [ref: > campaign.id]
+  shift_template_id uuid [note: 'param']
+  cell_state_id uuid [note: 'entity_status']
+  modality_id uuid [note: 'work_modality']
+  site_id uuid [note: 'attendance_site']
+  label_id uuid [note: 'operational_label']
   note text
   locked_attrs jsonb
   origin varchar(40)
   updated_at timestamptz [not null]
   updated_by uuid
-  Indexes {
-    (grid_id, employee_id, work_date, slot) [unique]
-    (company_id, employee_id, work_date) [name: 'ix_cell_who']
-  }
+  Indexes { (grid_id, employee_id, work_date, slot) [unique] }
 }
 
 Table schedule_cell_territory {
   id uuid [pk]
   company_id uuid [not null]
   cell_id uuid [not null, ref: > schedule_cell.id]
-  territory_node_id uuid [not null, ref: > territory_node.id]
-  Indexes {
-    (cell_id, territory_node_id) [unique]
-  }
+  territory_id uuid [not null, note: 'territory param']
+  Indexes { (cell_id, territory_id) [unique] }
 }
 
 Table schedule_cell_break {
   id uuid [pk]
   company_id uuid [not null]
   cell_id uuid [not null, ref: > schedule_cell.id]
-  template_break_id uuid [ref: > shift_template_break.id]
+  break_type_id uuid [note: 'break_type param']
+  template_break_id uuid [note: 'shift_template_break param']
   label varchar(80) [not null]
   duration_minutes int [not null]
   paid boolean [not null, default: false]
   sort_order smallint [not null, default: 0]
-  Note: 'Breaks repetibles / especiales #11'
-}
-
-Table schedule_cell_history {
-  id uuid [pk]
-  company_id uuid [not null]
-  cell_id uuid [not null, ref: > schedule_cell.id]
-  grid_id uuid [not null]
-  employee_id uuid [not null]
-  work_date date [not null]
-  action varchar(40) [not null, note: 'reasignar|publicar|intercambio|novedad|import']
-  before_json jsonb
-  after_json jsonb
-  reason text
-  origin varchar(40)
-  changed_by uuid [not null, note: 'ms_auth']
-  changed_at timestamptz [not null]
-  Indexes {
-    (cell_id, changed_at) [name: 'ix_cell_hist']
-  }
 }
 
 Table shift_swap_request {
@@ -407,13 +309,11 @@ Table shift_swap_request {
   requester_cell_id uuid [not null, ref: > schedule_cell.id]
   counterpart_cell_id uuid [not null, ref: > schedule_cell.id]
   status varchar(30) [not null]
-  rule_warnings jsonb
   decision_reason text
   decided_by uuid
   decided_at timestamptz
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
-  Note: 'Sin max_requests_per_month #16'
 }
 
 Table schedule_novelty {
@@ -423,25 +323,23 @@ Table schedule_novelty {
   cell_id uuid [ref: > schedule_cell.id]
   employee_id uuid [not null]
   work_date date [not null]
-  cell_state_id uuid [ref: > cell_state.id]
+  cell_state_id uuid [note: 'entity_status']
   description text
   source varchar(40) [not null]
   created_by uuid
   created_at timestamptz [not null]
-  Note: 'Novedades vinculadas a malla #18'
 }
 
 Table excel_import_batch {
   id uuid [pk]
   company_id uuid [not null]
-  front_id uuid [ref: > operational_front.id]
+  front_id uuid
   import_type varchar(40) [not null]
   file_name varchar(255)
   status varchar(20) [not null]
   summary_json jsonb
   uploaded_by uuid
   created_at timestamptz [not null]
-  Note: 'Plantilla Excel se mantiene #20'
 }
 
 Table excel_import_row {
@@ -453,4 +351,37 @@ Table excel_import_row {
   action varchar(40)
   status varchar(20) [not null]
   message text
+}
+
+TableGroup parametrization_transversal {
+  catalog_code_sequence
+  shift_template
+  break_type
+  shift_template_break
+  work_modality
+  attendance_site
+  operational_label
+  territory
+  hour_classification_band
+  entity_status
+}
+
+TableGroup malla_turnos_dominio {
+  operational_front
+  front_capability
+  front_area_link
+  front_user_scope
+  shift_template_front
+  rotation_pattern
+  rotation_pattern_step
+  schedule_grid
+  schedule_grid_person
+  schedule_grid_person_territory
+  schedule_cell
+  schedule_cell_territory
+  schedule_cell_break
+  shift_swap_request
+  schedule_novelty
+  excel_import_batch
+  excel_import_row
 }
